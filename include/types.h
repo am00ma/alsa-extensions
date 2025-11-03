@@ -96,6 +96,9 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 #define print3_(x, y, z)    p_debug( z "%s: " y , #x, x);
 #define print4_(x, y, z, w) p_debug( z "%" #w "s: " y , #x, x);
 
+#define print_range_header(vec, n, fmt) p_log("%10s -> ", #vec); RANGE(i, n) { p_log(fmt, i); } p_log("\n");
+#define print_range(vec, n, fmt) p_log("%10s -> ", #vec); RANGE(i, n) { p_log(fmt, vec[i]); } p_log("\n");
+
 /* ---------------------------------------------------------------------------
  * Normal Error handling -> prints to stderr
  * ------------------------------------------------------------------------- */
