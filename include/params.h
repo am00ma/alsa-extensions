@@ -15,7 +15,8 @@ typedef struct
 } sndx_params_t;
 
 void sndx_dump_params(sndx_params_t* params, snd_output_t* output);
-int  sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);
+
+int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);
 
 int sndx_set_hw_params(           //
     snd_pcm_t*   pcm,             //
