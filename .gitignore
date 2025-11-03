@@ -1,0 +1,6 @@
+.cache
+/build
+/data
+/jack2
+
+compile_commands.json
