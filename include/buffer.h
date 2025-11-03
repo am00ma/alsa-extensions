@@ -20,7 +20,7 @@ typedef struct
         u32*    skips;
         u32     bytes;
 
-        char* data;
+        float* data;
 
     } buf;
 
@@ -40,5 +40,8 @@ int sndx_buffer_open(            //
 
 int sndx_buffer_close(sndx_buffer_t* b);
 
-int sndx_buffer_read_from_area(format_t format);
-int sndx_buffer_write_to_area(format_t format);
+int sndx_buffer_samples_alloc(sndx_buffer_t* buf, char** samplesp, output_t* output);
+int sndx_buffer_samples_free(char* samples);
+
+int sndx_buffer_to_buf_from_area(sndx_buffer_t* b, uframes_t offset, uframes_t frames, format_t format);
+int sndx_buffer_to_area_from_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames, format_t format);

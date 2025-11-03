@@ -1,5 +1,4 @@
 #include "memops.h"
-#include "types.h"
 
 int main()
 {
