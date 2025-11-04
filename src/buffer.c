@@ -71,7 +71,6 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
 
     *bufp = b;
 
-    a_info("Opened buffer");
     return 0;
 }
 

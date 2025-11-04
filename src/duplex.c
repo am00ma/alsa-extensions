@@ -1,5 +1,6 @@
 #include "duplex.h"
 #include "params.h"
+#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -26,8 +27,12 @@ void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
     a_title("Play:");
     snd_pcm_dump(d->play, d->out);
 
+    sndx_dump_buffer(d->buf_play, output);
+
     a_title("Capture:");
     snd_pcm_dump(d->capt, d->out);
+
+    sndx_dump_buffer(d->buf_capt, output);
 }
 
 int sndx_duplex_open(                //
@@ -122,10 +127,10 @@ int sndx_duplex_open(                //
     d->linked = true;
 
     // Allocate buffers
-    err = sndx_buffer_open(&d->buf_play, d->format, d->ch_play, d->period_size, output);
+    err = sndx_buffer_open(&d->buf_play, d->format, d->ch_play, buffer_size, output);
     SndReturn_(err, "Failed: sndx_buffer_open(play): %s");
 
-    err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, d->period_size, output);
+    err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
     SndReturn_(err, "Failed: sndx_buffer_open(capt): %s");
 
     *duplexp = d;
