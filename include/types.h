@@ -109,13 +109,15 @@ typedef snd_pcm_sw_params_t    sw_params_t;
         behaviour;                            \
     }
 
-#define Fatal( cond,  ...)     if (cond) p_err(cond, exit(err) , __VA_ARGS__);
-#define Return(err ,  ...)     if (err)  p_err(err , return err, __VA_ARGS__);
-#define RetVal(cond, val, ...) if (cond) p_err(cond, return val, __VA_ARGS__);
+#define Fatal( cond,  ...)      p_err(cond, exit(err) , __VA_ARGS__);
+#define Return(err ,  ...)      p_err(err , return err, __VA_ARGS__);
+#define RetVal(cond, val, ...)  p_err(cond, return val, __VA_ARGS__);
+#define Goto( cond, label, ...) p_err(cond, goto label, __VA_ARGS__);
 
-#define SndFatal( err, ...)      p_err(err<0, exit(-1)  , __VA_ARGS__, snd_strerror(err));
-#define SndReturn(err, ...)      p_err(err<0, return err, __VA_ARGS__, snd_strerror(err));
-#define SndRetVal(err, val, ...) p_err(err<0, return val, __VA_ARGS__, snd_strerror(err));
+#define SndFatal( err, ...)        p_err(err<0, exit(-1)  , __VA_ARGS__, snd_strerror(err));
+#define SndReturn(err, ...)        p_err(err<0, return err, __VA_ARGS__, snd_strerror(err));
+#define SndRetVal(err, val, ...)   p_err(err<0, return val, __VA_ARGS__, snd_strerror(err));
+#define SndGoto(  err, label, ...) p_err(err<0, goto label, __VA_ARGS__, snd_strerror(err));
 
 /* ---------------------------------------------------------------------------
  * ALSA Error handling -> prints to snd_output_printf named output

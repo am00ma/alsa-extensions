@@ -87,8 +87,8 @@ int sndx_duplex_open(                //
             (period_size == play_params.period_size));
     Return_(err, "Could not set params");
 
-    err = snd_pcm_nonblock(d->play, 0);
-    SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
+    // err = snd_pcm_nonblock(d->play, 0);
+    // SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
 
     err = sndx_set_params(        //
         d->capt,                  //
