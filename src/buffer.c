@@ -1,9 +1,9 @@
 #include "buffer.h"
-#include "types.h"
+#include "memops.h"
 
 void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
 {
-    fmt_t f = b->format;
+    format_t f = b->format;
     a_info("  channels: %d", b->channels);
     a_info("  frames  : %ld", b->frames);
     a_info("  bytes   : %d", b->bytes);
@@ -20,7 +20,29 @@ void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
     a_info("    buf[%ld]: %p, %3u, %3u", chn, b->buf[chn].addr, b->buf[chn].first, b->buf[chn].step);
 }
 
-int sndx_buffer_open(sndx_buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output)
+void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, output_t* output)
+{
+    a_info("  offset, frames, channels  : %ld, %ld, %d", offset, frames, b->channels);
+
+    RANGE(chn, b->channels)
+    {
+        const area_t* a_dev = &b->dev[chn];
+        const area_t* a_buf = &b->buf[chn];
+
+        char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
+        float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
+        int    step = snd_pcm_channel_area_step(a_dev);
+
+        a_info("  chn %ld: dev: %p, buf: %p, step: %d", chn, dev, (void*)buf, step);
+    }
+
+    // Data
+    a_log("  b->data: ");
+    RANGE(i, (isize)frames) { a_log("%2.2f | ", b->data[i]); }
+    a_log("\n");
+}
+
+int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output)
 {
     sndx_buffer_t* b;
     b = calloc(1, sizeof(*b));
@@ -43,12 +65,13 @@ int sndx_buffer_open(sndx_buffer_t** bufp, fmt_t format, u32 channels, uframes_t
     RANGE(chn, b->channels)
     {
         b->buf[chn].addr  = b->data;
-        b->buf[chn].first = (b->frames * b->channels * sizeof(float) * 8) * chn;
+        b->buf[chn].first = (b->frames * chn * sizeof(float) * 8);
         b->buf[chn].step  = sizeof(float) * 8;
     }
 
     *bufp = b;
 
+    a_info("Opened buffer");
     return 0;
 }
 
@@ -69,5 +92,35 @@ void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)
         b->dev[chn].addr  = samples;
         b->dev[chn].first = b->bytes * 8 * chn;
         b->dev[chn].step  = b->bytes * 8 * b->channels;
+    }
+}
+
+void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
+{
+    RANGE(chn, b->channels)
+    {
+        const area_t* a_dev = &b->dev[chn];
+        const area_t* a_buf = &b->buf[chn];
+
+        float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
+        char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
+        int    step = snd_pcm_channel_area_step(a_dev);
+
+        sample_move_d16_sS(dev, buf, step, 4, frames);
+    }
+}
+
+void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
+{
+    RANGE(chn, b->channels)
+    {
+        const area_t* a_dev = &b->dev[chn];
+        const area_t* a_buf = &b->buf[chn];
+
+        char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
+        float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
+        int    step = snd_pcm_channel_area_step(a_dev);
+
+        sample_move_dS_s16(buf, dev, 4, step, frames);
     }
 }

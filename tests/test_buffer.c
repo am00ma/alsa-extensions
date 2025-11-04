@@ -18,6 +18,7 @@ int main()
 
     const isize channels = 2;
     const isize frames   = 10;
+    const isize offset   = 0;
 
     RANGE(i, num_formats)
     {
@@ -27,7 +28,30 @@ int main()
         char* samples = calloc(b->frames * b->channels * b->bytes, sizeof(char));
 
         sndx_buffer_map_dev_to_samples(b, samples);
+
+        // Confirm dev areas are mapped
         sndx_dump_buffer(b, output);
+
+        // Set some data
+        RANGE(i, frames) { b->data[i] = (float)i / frames; }
+
+        // Check areas
+        sndx_dump_buffer_areas(b, offset, frames, output);
+
+        // Move to device
+        sndx_buffer_buf_to_dev(b, offset, frames);
+
+        // Reset buf
+        RANGE(i, frames) { b->data[i] = 0.0; }
+
+        // Check areas
+        sndx_dump_buffer_areas(b, offset, frames, output);
+
+        // Move from device to buffer
+        sndx_buffer_dev_to_buf(b, offset, frames);
+
+        // Check areas
+        sndx_dump_buffer_areas(b, offset, frames, output);
 
         free(samples);
 

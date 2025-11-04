@@ -1,6 +1,5 @@
 #include "duplex.h"
 #include "params.h"
-#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
