@@ -34,6 +34,8 @@ set(COMMON_C_FLAGS
     -Wall
     -Wextra
     -pedantic
+    # -fsanitize=address
+    # -fsanitize=undefined
     -fdiagnostics-color=always)
 
 # =========================================================================

@@ -127,13 +127,13 @@ int sndx_buffer_to_area_from_buf(sndx_buffer_t* b, uframes_t offset, uframes_t f
 {
     RANGE(chn, b->channels)
     {
-        const snd_pcm_channel_area_t* src_area = &b->areas[chn];
-        const snd_pcm_channel_area_t* dst_area = &b->buf.areas[chn];
+        const snd_pcm_channel_area_t* src_area = &b->buf.areas[chn];
+        const snd_pcm_channel_area_t* dst_area = &b->areas[chn];
 
         float* src      = snd_pcm_channel_area_addr(src_area, offset);
         char*  dst      = snd_pcm_channel_area_addr(dst_area, offset);
-        u32    src_skip = snd_pcm_channel_area_step(src_area);
-        u32    dst_skip = snd_pcm_channel_area_step(dst_area) / 4;
+        u32    src_skip = snd_pcm_channel_area_step(src_area) / 4;
+        u32    dst_skip = snd_pcm_channel_area_step(dst_area);
         p_info("src: %p, %d | dst: %p, %d ", (void*)src, src_skip, dst, dst_skip);
         switch (format)
         {
@@ -153,22 +153,22 @@ int sndx_buffer_to_buf_from_area(sndx_buffer_t* b, uframes_t offset, uframes_t f
         p_info("---- %ld ----", chn);
         p_info("buf: %p | areas: %p", (void*)b->buf.areas, (void*)b->areas);
 
-        const snd_pcm_channel_area_t* src_area = &b->buf.areas[chn];
-        const snd_pcm_channel_area_t* dst_area = &b->areas[chn];
+        const snd_pcm_channel_area_t* src_area = &b->areas[chn];
+        const snd_pcm_channel_area_t* dst_area = &b->buf.areas[chn];
         p_info("src: %p | dst: %p", (void*)src_area, (void*)dst_area);
 
         char*  src      = snd_pcm_channel_area_addr(src_area, offset);
         float* dst      = snd_pcm_channel_area_addr(dst_area, offset);
-        u32    src_skip = snd_pcm_channel_area_step(src_area) / 4;
-        u32    dst_skip = snd_pcm_channel_area_step(dst_area);
+        u32    src_skip = snd_pcm_channel_area_step(src_area);
+        u32    dst_skip = snd_pcm_channel_area_step(dst_area) / 4;
         p_info("src: %p, %d | dst: %p, %d ", src, src_skip, (void*)dst, dst_skip);
-        // switch (format)
-        // {
-        // case SND_PCM_FORMAT_S16_LE: sample_move_dS_s16(dst, src, dst_skip, src_skip, frames); break;
-        // case SND_PCM_FORMAT_S24_3LE: sample_move_dS_s24(dst, src, dst_skip, src_skip, frames); break;
-        // case SND_PCM_FORMAT_S32_LE: sample_move_dS_s32(dst, src, dst_skip, src_skip, frames); break;
-        // default: AssertMsg(true, "Format not supported: %s", snd_pcm_format_name(format)); break;
-        // }
+        switch (format)
+        {
+        case SND_PCM_FORMAT_S16_LE: sample_move_dS_s16(dst, src, dst_skip, src_skip, frames); break;
+        case SND_PCM_FORMAT_S24_3LE: sample_move_dS_s24(dst, src, dst_skip, src_skip, frames); break;
+        case SND_PCM_FORMAT_S32_LE: sample_move_dS_s32(dst, src, dst_skip, src_skip, frames); break;
+        default: AssertMsg(true, "Format not supported: %s", snd_pcm_format_name(format)); break;
+        }
     }
     return 0;
 }
