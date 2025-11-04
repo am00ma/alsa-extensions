@@ -24,6 +24,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/memops.c
     ${CMAKE_SOURCE_DIR}/src/params.c
     ${CMAKE_SOURCE_DIR}/src/buffer.c
+    ${CMAKE_SOURCE_DIR}/src/xrun.c
+    ${CMAKE_SOURCE_DIR}/src/pollfds.c
     ${CMAKE_SOURCE_DIR}/src/duplex.c)
 set(COMMON_INCLUDES ${CMAKE_SOURCE_DIR}/include)
 set(COMMON_LIBS     m asound sndfile resample)

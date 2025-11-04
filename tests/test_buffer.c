@@ -55,7 +55,7 @@ int main()
 
         free(samples);
 
-        sndx_buffer_close(b, output);
+        sndx_buffer_close(b);
     }
 
     snd_output_close(output);

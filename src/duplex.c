@@ -121,6 +121,13 @@ int sndx_duplex_open(                //
 
     d->linked = true;
 
+    // Allocate buffers
+    err = sndx_buffer_open(&d->buf_play, d->format, d->ch_play, d->period_size, output);
+    SndReturn_(err, "Failed: sndx_buffer_open(play): %s");
+
+    err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, d->period_size, output);
+    SndReturn_(err, "Failed: sndx_buffer_open(capt): %s");
+
     *duplexp = d;
 
     return 0;
@@ -137,6 +144,9 @@ int sndx_duplex_close(sndx_duplex_t* d)
 
     err = snd_pcm_close(d->play);
     SndReturn_(err, "Failed: snd_pcm_close: %s");
+
+    sndx_buffer_close(d->buf_capt);
+    sndx_buffer_close(d->buf_play);
 
     free(d);
 

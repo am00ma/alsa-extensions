@@ -75,14 +75,12 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
     return 0;
 }
 
-void sndx_buffer_close(sndx_buffer_t* b, output_t* output)
+void sndx_buffer_close(sndx_buffer_t* b)
 {
     free(b->dev);
     free(b->buf);
     free(b->data);
     free(b);
-
-    a_info("Closed buffer");
 }
 
 void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)

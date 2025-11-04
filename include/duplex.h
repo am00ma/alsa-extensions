@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "buffer.h"
 
 typedef struct
 {
@@ -14,6 +14,9 @@ typedef struct
     u32      nperiods;
     u32      ch_play;
     u32      ch_capt;
+
+    sndx_buffer_t* buf_play;
+    sndx_buffer_t* buf_capt;
 
     output_t* out;
 
