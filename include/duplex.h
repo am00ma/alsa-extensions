@@ -1,6 +1,7 @@
 #pragma once
 
 #include "buffer.h"
+#include "types.h"
 
 typedef struct
 {
@@ -23,6 +24,7 @@ typedef struct
 } sndx_duplex_t;
 
 void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output);
+void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output);
 
 int sndx_duplex_open(                //
     sndx_duplex_t** duplexp,         //
@@ -34,5 +36,11 @@ int sndx_duplex_open(                //
     uframes_t       period_size,     //
     access_t        _access,         //
     snd_output_t*   output);
-
 int sndx_duplex_close(sndx_duplex_t* d);
+
+sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* frames, uframes_t* max);
+sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* frames);
+
+int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence);
+int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit);
+int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf);

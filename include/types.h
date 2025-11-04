@@ -114,6 +114,7 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 #define RetVal(cond, val, ...)  p_err(cond, return val, __VA_ARGS__);
 #define Goto( cond, label, ...) p_err(cond, goto label, __VA_ARGS__);
 
+#define SndCheck( err, ...)        p_err(err<0, ;         , __VA_ARGS__, snd_strerror(err));
 #define SndFatal( err, ...)        p_err(err<0, exit(-1)  , __VA_ARGS__, snd_strerror(err));
 #define SndReturn(err, ...)        p_err(err<0, return err, __VA_ARGS__, snd_strerror(err));
 #define SndRetVal(err, val, ...)   p_err(err<0, return val, __VA_ARGS__, snd_strerror(err));
@@ -145,6 +146,7 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 #define SysRetVal_(cond, val, ...) a_err(cond, return val, __VA_ARGS__, strerror(err));
 
 // Standard alsa error
+#define SndCheck_( err, ...)      a_err(err<0, ;         , __VA_ARGS__, snd_strerror(err));
 #define SndFatal_( err, ...)      a_err(err<0, exit(-1)  , __VA_ARGS__, snd_strerror(err));
 #define SndReturn_(err, ...)      a_err(err<0, return err, __VA_ARGS__, snd_strerror(err));
 #define SndRetVal_(err, val, ...) a_err(err<0, return val, __VA_ARGS__, snd_strerror(err));
