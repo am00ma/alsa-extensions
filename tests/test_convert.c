@@ -73,5 +73,8 @@ int main()
         }
     }
 
+    err = snd_output_close(OUT);
+    SndFatal(err, "Failed snd_output_stdio_attach: %s");
+
     return 0;
 }

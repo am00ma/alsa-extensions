@@ -31,7 +31,7 @@ int sndx_buffer_open(            //
 {
     sndx_buffer_t* a;
 
-    a = (sndx_buffer_t*)calloc(1, sizeof(*a));
+    a = calloc(1, sizeof(*a));
     if (!a) return -ENOMEM;
 
     a->channels    = channels;
