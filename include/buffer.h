@@ -2,46 +2,24 @@
 
 #include "types.h"
 
+typedef snd_pcm_format_t fmt_t;
+
 typedef struct
 {
-    u32       channels;
+    fmt_t     format;
     u32       bytes;
-    bool      interleaved;
+    u32       channels;
     uframes_t frames;
 
-    area_t* areas;
-    char**  addrs;
-    u32*    skips;
+    area_t* dev;  // Interleaved
+    area_t* buf;  // Non-interleaved
+    float*  data; // bare data
 
-    struct
-    {
-        area_t* areas;
-        char**  addrs;
-        u32*    skips;
-        u32     bytes;
+} buffer_t;
 
-        float* data;
+void dump_buffer(buffer_t* b, snd_output_t* output);
 
-    } buf;
+int  buffer_setup(buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output);
+void buffer_destroy(buffer_t* b);
 
-} sndx_buffer_t;
-
-constexpr format_t sndx_buffer_format_t = SND_PCM_FORMAT_FLOAT_LE;
-
-void sndx_dump_buffer(sndx_buffer_t* buffer, output_t* output);
-
-int sndx_buffer_open(            //
-    sndx_buffer_t** bufferp,     //
-    u32             channels,    //
-    format_t        format,      //
-    uframes_t       maxframes,   //
-    bool            interleaved, //
-    output_t*       output);
-
-int sndx_buffer_close(sndx_buffer_t* b);
-
-int sndx_buffer_samples_alloc(sndx_buffer_t* buf, char** samplesp, output_t* output);
-int sndx_buffer_samples_free(char* samples);
-
-int sndx_buffer_to_buf_from_area(sndx_buffer_t* b, uframes_t offset, uframes_t frames, format_t format);
-int sndx_buffer_to_area_from_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames, format_t format);
+void buffer_map_dev_to_samples(buffer_t* b, char* samples);

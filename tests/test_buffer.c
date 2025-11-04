@@ -8,35 +8,33 @@ int main()
     err = snd_output_stdio_attach(&output, stdout, 0);
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
-    sndx_buffer_t* b_float_non;
-    err = sndx_buffer_open(   //
-        &b_float_non,         //
-        2,                    // channels
-        SND_PCM_FORMAT_FLOAT, // format
-        10,                   // frames
-        false,                // noninterleaved
-        output);
-    SndFatal(err, "Failed sndx_buffer_open: %s");
+    const isize    num_formats = 4;
+    const format_t formats[]   = {
+        SND_PCM_FORMAT_FLOAT_LE,
+        SND_PCM_FORMAT_S16_LE,
+        SND_PCM_FORMAT_S24_3LE,
+        SND_PCM_FORMAT_S32_LE,
+    };
 
-    sndx_dump_buffer(b_float_non, output);
+    const isize channels = 2;
+    const isize frames   = 10;
 
-    err = sndx_buffer_close(b_float_non);
-    SndFatal(err, "Failed sndx_buffer_close: %s");
+    RANGE(i, num_formats)
+    {
+        buffer_t* b;
+        err = buffer_setup(&b, formats[i], channels, frames, output);
 
-    sndx_buffer_t* b_float_int;
-    err = sndx_buffer_open(   //
-        &b_float_int,         //
-        2,                    // channels
-        SND_PCM_FORMAT_FLOAT, // format
-        10,                   // frames
-        true,                 // interleaved
-        output);
-    SndFatal(err, "Failed sndx_buffer_open: %s");
+        char* samples = calloc(b->frames * b->channels * b->bytes, sizeof(char));
 
-    sndx_dump_buffer(b_float_int, output);
+        buffer_map_dev_to_samples(b, samples);
+        dump_buffer(b, output);
 
-    err = sndx_buffer_close(b_float_int);
-    SndFatal(err, "Failed sndx_buffer_close: %s");
+        free(samples);
+
+        buffer_destroy(b);
+    }
+
+    snd_output_close(output);
 
     return 0;
 }

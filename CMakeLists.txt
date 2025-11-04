@@ -34,9 +34,9 @@ set(COMMON_C_FLAGS
     -Wall
     -Wextra
     -pedantic
-    # -fsanitize=address
-    # -fsanitize=undefined
     -fdiagnostics-color=always)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 
 # =========================================================================
 #                     Tests

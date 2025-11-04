@@ -22,5 +22,7 @@ int main()
 
     sndx_dump_params(&p, output);
 
+    snd_output_close(output);
+
     return 0;
 }

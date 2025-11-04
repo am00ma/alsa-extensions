@@ -29,6 +29,7 @@ int sndx_duplex_open(                //
     u32             rate,            //
     uframes_t       buffer_size,     //
     uframes_t       period_size,     //
-    access_t        _access);
+    access_t        _access,         //
+    snd_output_t*   output);
 
 int sndx_duplex_close(sndx_duplex_t* d);

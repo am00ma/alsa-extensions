@@ -9,18 +9,21 @@ int main()
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
     sndx_duplex_t* d;
-    err = sndx_duplex_open(     //
-        &d,                     //
-        "hw:USB,0", "hw:USB,0", //
-        SND_PCM_FORMAT_S24_3LE, //
-        48000, 256, 128,        //
-        SND_PCM_ACCESS_MMAP_INTERLEAVED);
+    err = sndx_duplex_open(              //
+        &d,                              //
+        "hw:USB,0", "hw:USB,0",          //
+        SND_PCM_FORMAT_S24_3LE,          //
+        48000, 256, 128,                 //
+        SND_PCM_ACCESS_MMAP_INTERLEAVED, //
+        output);
     SndFatal(err, "Failed sndx_duplex_open: %s");
 
     sndx_dump_duplex(d, output);
 
     err = sndx_duplex_close(d);
     SndFatal(err, "Failed sndx_duplex_close: %s");
+
+    snd_output_close(output);
 
     return 0;
 }

@@ -1,5 +1,6 @@
 #include "duplex.h"
 #include "params.h"
+#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -38,7 +39,8 @@ int sndx_duplex_open(                //
     u32             rate,            //
     uframes_t       buffer_size,     //
     uframes_t       period_size,     //
-    access_t        _access)
+    access_t        _access,         //
+    output_t*       output)
 {
     int err;
 
@@ -46,11 +48,6 @@ int sndx_duplex_open(                //
 
     d = (sndx_duplex_t*)calloc(1, sizeof(*d));
     if (!d) return -ENOMEM;
-
-    snd_output_t* output = output;
-
-    err = snd_output_stdio_attach(&output, stdout, 0);
-    SndReturn(err, "Failed: snd_output_stdio_attach: %s");
 
     d->out = output;
 
