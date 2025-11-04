@@ -21,17 +21,17 @@ int main()
 
     RANGE(i, num_formats)
     {
-        buffer_t* b;
-        err = buffer_setup(&b, formats[i], channels, frames, output);
+        sndx_buffer_t* b;
+        err = sndx_buffer_open(&b, formats[i], channels, frames, output);
 
         char* samples = calloc(b->frames * b->channels * b->bytes, sizeof(char));
 
-        buffer_map_dev_to_samples(b, samples);
-        dump_buffer(b, output);
+        sndx_buffer_map_dev_to_samples(b, samples);
+        sndx_dump_buffer(b, output);
 
         free(samples);
 
-        buffer_destroy(b);
+        sndx_buffer_close(b, output);
     }
 
     snd_output_close(output);

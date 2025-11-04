@@ -1,6 +1,7 @@
 #include "buffer.h"
+#include "types.h"
 
-void dump_buffer(buffer_t* b, output_t* output)
+void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
 {
     fmt_t f = b->format;
     a_info("  channels: %d", b->channels);
@@ -19,9 +20,9 @@ void dump_buffer(buffer_t* b, output_t* output)
     a_info("    buf[%ld]: %p, %3u, %3u", chn, b->buf[chn].addr, b->buf[chn].first, b->buf[chn].step);
 }
 
-int buffer_setup(buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output)
+int sndx_buffer_open(sndx_buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output)
 {
-    buffer_t* b;
+    sndx_buffer_t* b;
     b = calloc(1, sizeof(*b));
     RetVal_(!b, -ENOMEM, "Failed calloc buffer_t* b");
 
@@ -51,15 +52,17 @@ int buffer_setup(buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, 
     return 0;
 }
 
-void buffer_destroy(buffer_t* b)
+void sndx_buffer_close(sndx_buffer_t* b, output_t* output)
 {
     free(b->dev);
     free(b->buf);
     free(b->data);
     free(b);
+
+    a_info("Closed buffer");
 }
 
-void buffer_map_dev_to_samples(buffer_t* b, char* samples)
+void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)
 {
     RANGE(chn, b->channels)
     {

@@ -15,11 +15,12 @@ typedef struct
     area_t* buf;  // Non-interleaved
     float*  data; // bare data
 
-} buffer_t;
+} sndx_buffer_t;
 
-void dump_buffer(buffer_t* b, snd_output_t* output);
+void sndx_dump_buffer(sndx_buffer_t* b, snd_output_t* output);
+void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, snd_output_t* output);
 
-int  buffer_setup(buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output);
-void buffer_destroy(buffer_t* b);
+int  sndx_buffer_open(sndx_buffer_t** bufp, fmt_t format, u32 channels, uframes_t frames, snd_output_t* output);
+void sndx_buffer_close(sndx_buffer_t* b, snd_output_t* output);
 
-void buffer_map_dev_to_samples(buffer_t* b, char* samples);
+void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples);
