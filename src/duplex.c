@@ -1,5 +1,7 @@
 #include "duplex.h"
+#include "buffer.h"
 #include "params.h"
+#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -185,17 +187,49 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* 
     {
         *frames += r;
         if ((long)*max < r) *max = r;
+
+        // After read, copy to soft buffer as float
+        sndx_buffer_dev_to_buf(d->buf_capt, 0, r);
     }
     else {
         sndx_dump_duplex_status(d, d->out);
     }
+
     // showstat(handle, 0);
     return r;
+}
+
+void sndx_duplex_copy_capt_to_play(sndx_duplex_t* d, sframes_t len, float gain)
+{
+    // Necessary for stride, though should be guaranteed by setup
+    AssertMsg(d->buf_capt->frames == d->buf_play->frames,                 //
+              "d->buf_capt->frames == d->buf_play->frames [%ld != %ld]:", //
+              d->buf_capt->frames, d->buf_play->frames);
+
+    // Actual realtime check - can just return, but better to flag
+    AssertMsg(len >= 0, "Received negative len: %ld", len);
+
+    // Copy capture channels to playback
+    // Assert(d->buf_capt->frames == d->buf_play->frames); // Guaranteed by setup
+    isize nframes = d->buf_capt->frames;
+    if (d->ch_capt == 1)
+    {
+        RANGE(chn, d->ch_play)
+        RANGE(i, len) { d->buf_play->data[i + (nframes * chn)] = d->buf_capt->data[i] * gain; }
+    }
+    else if (d->ch_capt == d->ch_play)
+    {
+        RANGE(chn, d->ch_play)
+        RANGE(i, len) { d->buf_play->data[i + (nframes * chn)] = d->buf_capt->data[i + (nframes * chn)] * gain; }
+    }
 }
 
 sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* frames)
 {
     snd_output_t* output = d->out;
+
+    // Write from soft buffer to device as int
+    sndx_buffer_buf_to_dev(d->buf_play, 0, len);
 
     long r;
     int  frame_bytes = (snd_pcm_format_physical_width(d->format) / 8) * d->ch_play;
@@ -210,6 +244,7 @@ sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* fr
         len     -= r;
         *frames += r;
     }
+
     return 0;
 }
 
@@ -294,7 +329,8 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     uframes_t in_max     = 0;
 
     // Read write loop
-    ssize_t r, cap_avail;
+    sframes_t r, cap_avail;
+    float     gain = 0.5;
     while (frames_in < loop_limit)
     {
         cap_avail = d->period_size;
@@ -302,6 +338,9 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
 
         r = sndx_duplex_readbuf(d, capt_buf, cap_avail, &frames_in, &in_max);
         SndReturn_(r, "Failed readbuf: %s");
+
+        // Copy capture channels to playback
+        sndx_duplex_copy_capt_to_play(d, r, gain);
 
         err = sndx_duplex_writebuf(d, play_buf, r, &frames_out);
         SndReturn_(r, "Failed writebuf: %s");

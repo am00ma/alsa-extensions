@@ -11,7 +11,7 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:FC1,0", "hw:FC1_1,0",        // play, capt device
+        "hw:FC1_1,0", "hw:FC1_1,0",      // play, capt device
         SND_PCM_FORMAT_S16_LE,           // format
         48000,                           // rate
         256, 128,                        // buffer_size, period_size
@@ -21,7 +21,7 @@ int main()
 
     char*     play_buf;
     char*     capt_buf;
-    uframes_t loop_limit = d->rate;
+    uframes_t loop_limit = d->rate * 120;
 
     err = sndx_duplex_start(d, &play_buf, &capt_buf, loop_limit);
     SndCheck_(err, "Failed sndx_duplex_start: %s");
