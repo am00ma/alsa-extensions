@@ -21,7 +21,7 @@ int main()
 
     char*     play_buf;
     char*     capt_buf;
-    uframes_t loop_limit = d->rate * 120;
+    uframes_t loop_limit = d->rate / 100; // 0.01 secs
 
     err = sndx_duplex_start(d, &play_buf, &capt_buf, loop_limit);
     SndCheck_(err, "Failed sndx_duplex_start: %s");

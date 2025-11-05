@@ -1,7 +1,5 @@
 #include "duplex.h"
-#include "buffer.h"
 #include "params.h"
-#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -199,28 +197,24 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* 
     return r;
 }
 
-void sndx_duplex_copy_capt_to_play(sndx_duplex_t* d, sframes_t len, float gain)
+void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
 {
-    // Necessary for stride, though should be guaranteed by setup
-    AssertMsg(d->buf_capt->frames == d->buf_play->frames,                 //
-              "d->buf_capt->frames == d->buf_play->frames [%ld != %ld]:", //
-              d->buf_capt->frames, d->buf_play->frames);
+    float* gain = data;
 
     // Actual realtime check - can just return, but better to flag
     AssertMsg(len >= 0, "Received negative len: %ld", len);
 
     // Copy capture channels to playback
-    // Assert(d->buf_capt->frames == d->buf_play->frames); // Guaranteed by setup
-    isize nframes = d->buf_capt->frames;
-    if (d->ch_capt == 1)
+    isize buf_size = buf_capt->frames; // buf_capt->frames == buf_play->frames Guaranteed by setup
+    if (buf_capt->channels == 1)
     {
-        RANGE(chn, d->ch_play)
-        RANGE(i, len) { d->buf_play->data[i + (nframes * chn)] = d->buf_capt->data[i] * gain; }
+        RANGE(chn, buf_play->channels)
+        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i] * (*gain); }
     }
-    else if (d->ch_capt == d->ch_play)
+    else if (buf_capt->channels == buf_play->channels)
     {
-        RANGE(chn, d->ch_play)
-        RANGE(i, len) { d->buf_play->data[i + (nframes * chn)] = d->buf_capt->data[i + (nframes * chn)] * gain; }
+        RANGE(chn, buf_play->channels)
+        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i + (buf_size * chn)] * (*gain); }
     }
 }
 
@@ -340,7 +334,7 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
         SndReturn_(r, "Failed readbuf: %s");
 
         // Copy capture channels to playback
-        sndx_duplex_copy_capt_to_play(d, r, gain);
+        sndx_duplex_copy_capt_to_play(d->buf_capt, d->buf_play, r, &gain);
 
         err = sndx_duplex_writebuf(d, play_buf, r, &frames_out);
         SndReturn_(r, "Failed writebuf: %s");

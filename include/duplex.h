@@ -50,4 +50,4 @@ int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf);
 void sndx_duplex_timer_start(sndx_duplex_t* d);
 void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* output);
 
-void sndx_duplex_copy_capt_to_play(sndx_duplex_t* d, sframes_t len, float gain);
+void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data);
