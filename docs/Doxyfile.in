@@ -1,0 +1,25 @@
+PROJECT_NAME           = "Customized project name"
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
+
+QUIET                  = YES
+RECURSIVE              = YES
+FILE_PATTERNS          = "*.c *.h *.md"
+INCLUDE_PATH           = include
+EXAMPLE_PATH           = examples
+IMAGE_PATH             = docs/img
+USE_MDFILE_AS_MAINPAGE = README.md
+
+PLANTUML_JAR_PATH   = /home/x/.local/bin/plantuml.jar
+HAVE_DOT            = YES
+DOT_IMAGE_FORMAT    = "svg"
+CALL_GRAPH          = YES
+CALLER_GRAPH        = YES
+UML_LOOK            = YES
+DOT_GRAPH_MAX_NODES = 50
+INTERACTIVE_SVG     = YES
+
+HTML_COLORSTYLE       = "TOGGLE"
+GENERATE_TREEVIEW     = YES
+DISABLE_INDEX         = NO
+FULL_SIDEBAR          = NO
+HTML_EXTRA_STYLESHEET = docs/doxygen-awesome.css

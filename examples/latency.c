@@ -1,8 +1,14 @@
+/*! \file latency.c
+    \brief A Documented file.
+
+    Details.
+*/
+
 #include "duplex.h"
 
 int main()
 {
-    int err;
+    int err; ///< Brief description after the member
 
     output_t* output;
     err = snd_output_stdio_attach(&output, stderr, 0);
