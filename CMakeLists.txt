@@ -23,11 +23,27 @@ include(CTest)
 find_package(Doxygen)
 
 if(Doxygen_FOUND)
-    set(DOXYGEN_FILE_PATTERNS *.h *.c *.md)
-    set(DOXYGEN_HTML_COLORSTYLE "TOGGLE")
-    set(DOXYGEN_QUIET YES)
+    set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-    set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+    set(DOXYGEN_PLANTUML_JAR_PATH      $(HOME)/.local/bin/plantuml.jar)
+    set(DOXYGEN_WARN_IF_UNDOCUMENTED   NO)
+    set(DOXYGEN_QUIET                  YES)
+
+    set(DOXYGEN_HAVE_DOT            YES)
+    set(DOXYGEN_HAVE_GRAPHVIZ       YES)
+    set(DOXYGEN_DOT_IMAGE_FORMAT    "svg")
+    set(DOXYGEN_CALL_GRAPH          YES)
+    set(DOXYGEN_CALLER_GRAPH        YES)
+    set(DOXYGEN_UML_LOOK            YES)
+    set(DOXYGEN_DOT_GRAPH_MAX_NODES 50)
+    set(DOXYGEN_INTERACTIVE_SVG     YES)
+
+    set(DOXYGEN_HTML_COLORSTYLE   "TOGGLE")
+    set(DOXYGEN_GENERATE_TREEVIEW YES)
+    set(DOXYGEN_DISABLE_INDEX     NO)
+    set(DOXYGEN_FULL_SIDEBAR      NO)
+    set(DOXYGEN_HTML_EXTRA_STYLESHEET
+        /usr/local/share/doxygen-awesome-css/doxygen-awesome.css)
 
     doxygen_add_docs(example_docs ${CMAKE_CURRENT_SOURCE_DIR} ALL)
 endif()
@@ -41,6 +57,7 @@ set(LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/buffer.c
     ${CMAKE_SOURCE_DIR}/src/xrun.c
     ${CMAKE_SOURCE_DIR}/src/timer.c
+    ${CMAKE_SOURCE_DIR}/src/playback.c
     ${CMAKE_SOURCE_DIR}/src/duplex.c)
 set(LIB_INCLUDES ${CMAKE_SOURCE_DIR}/include)
 set(LIB_LIBS     m asound sndfile resample)

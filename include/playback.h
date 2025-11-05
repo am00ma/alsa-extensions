@@ -42,6 +42,6 @@ int sndx_playback_start(sndx_playback_t* d, char** play_bufp, uframes_t loop_lim
 int sndx_playback_stop(sndx_playback_t* d, char* play_buf);
 
 void sndx_playback_timer_start(sndx_playback_t* d);
-void sndx_playback_timer_stop(sndx_playback_t* d, uframes_t frames_in, output_t* output);
+void sndx_playback_timer_stop(sndx_playback_t* d, uframes_t frames_out, output_t* output);
 
 void sndx_playback_callback(sndx_buffer_t* buf_play, sframes_t len, void* data);

@@ -184,22 +184,15 @@ void sndx_playback_timer_start(sndx_playback_t* d)
     timestamp_get(d->play, &d->timer.play);
 }
 
-void sndx_playback_timer_stop(sndx_playback_t* d, uframes_t frames_in, output_t* output)
+void sndx_playback_timer_stop(sndx_playback_t* d, uframes_t frames_out, output_t* output)
 {
     a_info("Timer status:");
 
-    if (d->timer.play.tv_sec == d->timer.capt.tv_sec && //
-        d->timer.play.tv_usec == d->timer.capt.tv_usec)
-        a_info("  Hardware sync");
-
     i64 diff  = timestamp_diff_now(&d->timer.start);
-    i64 mtime = frames_to_micro(frames_in, d->rate);
+    i64 mtime = frames_to_micro(frames_out, d->rate);
     a_info("  Elapsed real  : %ld us", diff);
     a_info("  Elapsed device: %ld us", mtime);
     a_info("  Diff (device - real): %ld us", mtime - diff);
-    a_info("  Playback = %li.%i", (long)d->timer.play.tv_sec, (int)d->timer.play.tv_usec);
-    a_info("  Capture  = %li.%i", (long)d->timer.capt.tv_sec, (int)d->timer.capt.tv_usec);
-    a_info("  Diff     = %li", timestamp_diff(d->timer.play, d->timer.capt));
 }
 
 int sndx_playback_start(sndx_playback_t* d, char** play_bufp, uframes_t loop_limit)
