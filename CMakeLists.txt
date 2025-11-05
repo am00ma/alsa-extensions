@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.5)
 # =========================================================================
 project(
     "alsa-extensions"
-    VERSION 0.0.1
-    DESCRIPTION "Extensions to alsa-lib for multiple devices"
+    VERSION 0.0.2
+    DESCRIPTION "Extensions to alsa-lib for duplex streams on multiple devices"
     LANGUAGES C)
 
 # =========================================================================
@@ -35,16 +35,16 @@ endif()
 # =========================================================================
 #                     Common
 # =========================================================================
-set(COMMON_SOURCES
+set(LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/memops.c
     ${CMAKE_SOURCE_DIR}/src/params.c
     ${CMAKE_SOURCE_DIR}/src/buffer.c
     ${CMAKE_SOURCE_DIR}/src/xrun.c
     ${CMAKE_SOURCE_DIR}/src/timer.c
     ${CMAKE_SOURCE_DIR}/src/duplex.c)
-set(COMMON_INCLUDES ${CMAKE_SOURCE_DIR}/include)
-set(COMMON_LIBS     m asound sndfile resample)
-set(COMMON_C_FLAGS
+set(LIB_INCLUDES ${CMAKE_SOURCE_DIR}/include)
+set(LIB_LIBS     m asound sndfile resample)
+set(LIB_C_FLAGS
     PRIVATE
     -O0
     -g
@@ -52,6 +52,13 @@ set(COMMON_C_FLAGS
     -Wextra
     -pedantic
     -fdiagnostics-color=always)
+
+set(LIB_NAME alsax)
+add_library(${LIB_NAME} STATIC)
+target_link_libraries(${LIB_NAME} PUBLIC ${LIB_LIBS})
+target_sources(${LIB_NAME} PRIVATE ${LIB_SOURCES})
+target_include_directories(${LIB_NAME} PUBLIC ${LIB_INCLUDES})
+target_compile_options(${LIB_NAME} ${LIB_C_FLAGS})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 
