@@ -1,7 +1,5 @@
 #include "duplex.h"
 #include "params.h"
-#include "types.h"
-#include <alsa/asoundlib.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -235,6 +233,31 @@ __error:
     return err;
 }
 
+void sndx_duplex_timer_start(sndx_duplex_t* d)
+{
+    timestamp_now(&d->timer.start);
+    timestamp_get(d->play, &d->timer.play);
+    timestamp_get(d->capt, &d->timer.capt);
+}
+
+void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* output)
+{
+    a_info("Timer status:");
+
+    if (d->timer.play.tv_sec == d->timer.capt.tv_sec && //
+        d->timer.play.tv_usec == d->timer.capt.tv_usec)
+        a_info("  Hardware sync");
+
+    i64 diff  = timestamp_diff_now(&d->timer.start);
+    i64 mtime = frames_to_micro(frames_in, d->rate);
+    a_info("  Elapsed real  : %ld us", diff);
+    a_info("  Elapsed device: %ld us", mtime);
+    a_info("  Diff (device - real): %ld us", mtime - diff);
+    a_info("  Playback = %li.%i", (long)d->timer.play.tv_sec, (int)d->timer.play.tv_usec);
+    a_info("  Capture  = %li.%i", (long)d->timer.capt.tv_sec, (int)d->timer.capt.tv_usec);
+    a_info("  Diff     = %li", timestamp_diff(d->timer.play, d->timer.capt));
+}
+
 int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit)
 {
     int err;
@@ -259,6 +282,10 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     err = sndx_duplex_write_initial_silence(d, play_buf, &frames_silence);
     SndFatal(err, "Failed sndx_duplex_write_initial_silence: %s");
 
+    // After silence, stream is already started (start threshold is 0x7fffffff in latency, 2*period_size for duplex)
+    sndx_duplex_timer_start(d);
+
+    // Debugging
     sndx_dump_duplex(d, output);
 
     // Start prep for loop -> on error goto __error
@@ -266,13 +293,11 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     uframes_t frames_in  = 0;
     uframes_t in_max     = 0;
 
-    // Start of loop
+    // Read write loop
     ssize_t r, cap_avail;
-
     while (frames_in < loop_limit)
     {
         cap_avail = d->period_size;
-
         snd_pcm_wait(d->capt, 1000);
 
         r = sndx_duplex_readbuf(d, capt_buf, cap_avail, &frames_in, &in_max);
@@ -282,7 +307,8 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
         SndReturn_(r, "Failed writebuf: %s");
     }
 
-    sndx_dump_duplex(d, output);
+    // Report final timings
+    sndx_duplex_timer_stop(d, frames_in, output);
 
     return 0;
 }
@@ -299,8 +325,6 @@ int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf)
 
     free(capt_buf);
     free(play_buf);
-
-    sndx_dump_duplex_status(d, d->out);
 
     return 0;
 }

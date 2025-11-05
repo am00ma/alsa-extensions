@@ -3,6 +3,8 @@
 
 void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
 {
+    a_info("Buffer status:");
+
     format_t f = b->format;
     a_info("  channels: %d", b->channels);
     a_info("  frames  : %ld", b->frames);

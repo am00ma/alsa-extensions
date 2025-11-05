@@ -1,7 +1,7 @@
 #pragma once
 
 #include "buffer.h"
-#include "types.h"
+#include "timer.h"
 
 typedef struct
 {
@@ -18,6 +18,8 @@ typedef struct
 
     sndx_buffer_t* buf_play;
     sndx_buffer_t* buf_capt;
+
+    sndx_timer_t timer;
 
     output_t* out;
 
@@ -44,3 +46,6 @@ sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* fr
 int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence);
 int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit);
 int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf);
+
+void sndx_duplex_timer_start(sndx_duplex_t* d);
+void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* output);
