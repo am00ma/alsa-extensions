@@ -65,6 +65,22 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     return 0;
 }
 
+int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf)
+{
+    snd_pcm_drop(d->capt);
+    snd_pcm_drain(d->play);
+    snd_pcm_nonblock(d->play, SND_PCM_NONBLOCK);
+
+    snd_pcm_unlink(d->capt);
+    snd_pcm_hw_free(d->play);
+    snd_pcm_hw_free(d->capt);
+
+    free(capt_buf);
+    free(play_buf);
+
+    return 0;
+}
+
 int main()
 {
     int err; ///< Brief description after the member

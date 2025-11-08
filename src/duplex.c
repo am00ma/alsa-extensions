@@ -304,19 +304,3 @@ void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* out
     a_info("  Capture  = %li.%i", (long)d->timer.capt.tv_sec, (int)d->timer.capt.tv_usec);
     a_info("  Diff     = %li", timestamp_diff(d->timer.play, d->timer.capt));
 }
-
-int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf)
-{
-    snd_pcm_drop(d->capt);
-    snd_pcm_drain(d->play);
-    snd_pcm_nonblock(d->play, SND_PCM_NONBLOCK);
-
-    snd_pcm_unlink(d->capt);
-    snd_pcm_hw_free(d->play);
-    snd_pcm_hw_free(d->capt);
-
-    free(capt_buf);
-    free(play_buf);
-
-    return 0;
-}
