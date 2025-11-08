@@ -6,6 +6,11 @@
 
 #include "duplex.h"
 
+// Form of start and stop in this program
+int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit);
+int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf);
+
+// Implementation
 int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit)
 {
     int err;
@@ -81,6 +86,7 @@ int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf)
     return 0;
 }
 
+// Application
 int main()
 {
     int err; ///< Brief description after the member

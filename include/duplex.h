@@ -51,10 +51,7 @@ int sndx_duplex_close(sndx_duplex_t* d);
 
 sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* frames, uframes_t* max);
 sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* frames);
-
-int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence);
-int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, uframes_t loop_limit);
-int sndx_duplex_stop(sndx_duplex_t* d, char* play_buf, char* capt_buf);
+int       sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence);
 
 void sndx_duplex_timer_start(sndx_duplex_t* d);
 void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* output);
