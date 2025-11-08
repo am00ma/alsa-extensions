@@ -78,10 +78,17 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
 
 void sndx_buffer_close(sndx_buffer_t* b)
 {
-    free(b->dev);
-    free(b->buf);
-    free(b->data);
+    if (!b) return;
+
+    if (b->dev) free(b->dev);
+    if (b->buf) free(b->buf);
+    if (b->data) free(b->data);
+    b->dev  = nullptr;
+    b->buf  = nullptr;
+    b->data = nullptr;
+
     free(b);
+    b = nullptr;
 }
 
 void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)

@@ -80,10 +80,10 @@ int sndx_duplex_open(                //
     d->out = output;
 
     err = snd_pcm_open(&d->play, playback_device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
-    SndGoto_(err, __free, "Failed: snd_pcm_open: %s");
+    SndGoto_(err, __close, "Failed: snd_pcm_open: %s");
 
     err = snd_pcm_open(&d->capt, capture_device, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
-    SndGoto_(err, __close_play, "Failed: snd_pcm_open: %s");
+    SndGoto_(err, __close, "Failed: snd_pcm_open: %s");
 
     sndx_params_t play_params = default_params;
     sndx_params_t capt_params = default_params;
@@ -162,18 +162,7 @@ int sndx_duplex_open(                //
     return 0;
 
 __close:
-    if (d->buf_play) { sndx_buffer_close(d->buf_play); }
-    if (d->buf_capt) { sndx_buffer_close(d->buf_capt); }
-
-    int errcc = snd_pcm_close(d->capt);
-    SndReturn_(errcc, "Failed: snd_pcm_close: %s");
-
-__close_play:
-    int errcp = snd_pcm_close(d->play);
-    SndReturn_(errcp, "Failed: snd_pcm_close: %s");
-
-__free:
-    free(d);
+    sndx_duplex_close(d);
     *duplexp = nullptr;
 
     return err;
@@ -185,16 +174,23 @@ int sndx_duplex_close(sndx_duplex_t* d)
 
     snd_output_t* output = d->out;
 
-    err = snd_pcm_close(d->capt);
-    SndReturn_(err, "Failed: snd_pcm_close: %s");
+    if (d->capt)
+    {
+        err = snd_pcm_close(d->capt);
+        SndReturn_(err, "Failed: snd_pcm_close: %s");
+    }
 
-    err = snd_pcm_close(d->play);
-    SndReturn_(err, "Failed: snd_pcm_close: %s");
+    if (d->play)
+    {
+        err = snd_pcm_close(d->play);
+        SndReturn_(err, "Failed: snd_pcm_close: %s");
+    }
 
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
     free(d);
+    d = nullptr;
 
     return 0;
 }
