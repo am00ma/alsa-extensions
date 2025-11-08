@@ -17,7 +17,7 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:FC1_1,0", "hw:FC1_1,0",      // play, capt device
+        "hw:FC1,0", "hw:FC1,0",          // play, capt device
         SND_PCM_FORMAT_S16_LE,           // format
         48000,                           // rate
         256, 128,                        // buffer_size, period_size

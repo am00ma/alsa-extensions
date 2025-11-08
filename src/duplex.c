@@ -1,5 +1,6 @@
 #include "duplex.h"
 #include "params.h"
+#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -54,6 +55,10 @@ void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output)
     snd_pcm_status_dump(status, output);
 }
 
+/** \example latency.c
+ * This is an example of how to use the Example_Test class.
+ * More details about this example.
+ */
 int sndx_duplex_open(                //
     sndx_duplex_t** duplexp,         //
     const char*     playback_device, //
@@ -75,10 +80,10 @@ int sndx_duplex_open(                //
     d->out = output;
 
     err = snd_pcm_open(&d->play, playback_device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
-    SndReturn_(err, "Failed: snd_pcm_open: %s");
+    SndGoto_(err, __free, "Failed: snd_pcm_open: %s");
 
     err = snd_pcm_open(&d->capt, capture_device, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
-    SndReturn_(err, "Failed: snd_pcm_open: %s");
+    SndGoto_(err, __close_play, "Failed: snd_pcm_open: %s");
 
     sndx_params_t play_params = default_params;
     sndx_params_t capt_params = default_params;
@@ -99,12 +104,12 @@ int sndx_duplex_open(                //
         play_params.access,       //
         false,                    //
         d->out);                  //
-    SndReturn_(err, "Failed: sndx_set_params: %s");
+    SndGoto_(err, __close, "Failed: sndx_set_params: %s");
 
     err = !((rate == play_params.rate) &&               //
             (buffer_size == play_params.buffer_size) && //
             (period_size == play_params.period_size));
-    Return_(err, "Could not set params");
+    Goto_(err, __close, "Failed: params check");
 
     // err = snd_pcm_nonblock(d->play, 0);
     // SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
@@ -119,7 +124,7 @@ int sndx_duplex_open(                //
         capt_params.access,       //
         false,                    //
         d->out);                  //
-    SndReturn_(err, "Failed: sndx_set_params: %s");
+    SndGoto_(err, __close, "Failed: sndx_set_params: %s");
 
     err = !((rate == capt_params.rate) &&               //
             (buffer_size == capt_params.buffer_size) && //
@@ -130,7 +135,7 @@ int sndx_duplex_open(                //
     Return_(err, "play_params.format != capt_params.format");
 
     err = snd_pcm_nonblock(d->capt, SND_PCM_NONBLOCK);
-    SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
+    SndGoto_(err, __close, "Failed: snd_pcm_nonblock: %s");
 
     d->format      = play_params.format;
     d->rate        = rate;
@@ -141,20 +146,37 @@ int sndx_duplex_open(                //
     d->ch_capt = capt_params.channels;
 
     err = snd_pcm_link(d->capt, d->play);
-    SndReturn_(err, "Failed: snd_pcm_link: %s");
+    SndGoto_(err, __close, "Failed: snd_pcm_link: %s");
 
     d->linked = true;
 
     // Allocate buffers
     err = sndx_buffer_open(&d->buf_play, d->format, d->ch_play, buffer_size, output);
-    SndReturn_(err, "Failed: sndx_buffer_open(play): %s");
+    SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
     err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
-    SndReturn_(err, "Failed: sndx_buffer_open(capt): %s");
+    SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
     *duplexp = d;
 
     return 0;
+
+__close:
+    if (d->buf_play) { sndx_buffer_close(d->buf_play); }
+    if (d->buf_capt) { sndx_buffer_close(d->buf_capt); }
+
+    int errcc = snd_pcm_close(d->capt);
+    SndReturn_(errcc, "Failed: snd_pcm_close: %s");
+
+__close_play:
+    int errcp = snd_pcm_close(d->play);
+    SndReturn_(errcp, "Failed: snd_pcm_close: %s");
+
+__free:
+    free(d);
+    *duplexp = nullptr;
+
+    return err;
 }
 
 int sndx_duplex_close(sndx_duplex_t* d)

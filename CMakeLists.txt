@@ -28,7 +28,11 @@ set(DOXYGEN_QUIET                YES)
 set(DOXYGEN_RECURSIVE              YES)
 set(DOXYGEN_CREATE_SUBDIRS         YES)
 set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
-set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${CMAKE_SOURCE_DIR}/README.md)
+set(DOXYGEN_EXAMPLE_PATH           ${CMAKE_SOURCE_DIR}/examples)
+set(DOXYGEN_EXAMPLE_PATTERNS       *.c)
+set(DOXYGEN_EXAMPLE_RECURSIVE      YES)
+set(DOXYGEN_INCLUDE_PATH           ${CMAKE_SOURCE_DIR}/include)
 
 set(DOXYGEN_PLANTUML_JAR_PATH   $(HOME)/.local/bin/plantuml.jar)
 set(DOXYGEN_HAVE_DOT            YES)
@@ -45,9 +49,15 @@ set(DOXYGEN_GENERATE_TREEVIEW YES)
 set(DOXYGEN_DISABLE_INDEX     NO)
 set(DOXYGEN_FULL_SIDEBAR      NO)
 set(DOXYGEN_HTML_EXTRA_STYLESHEET
-    /usr/local/share/doxygen-awesome-css/doxygen-awesome.css)
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen-awesome.css")
 
-doxygen_add_docs(example_docs ${CMAKE_CURRENT_SOURCE_DIR} ALL)
+# https://cmake.org/cmake/help/latest/module/FindDoxygen.html
+doxygen_add_docs(example_docs
+    ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/docs
+    ALL)
 
 # =========================================================================
 #                     Common

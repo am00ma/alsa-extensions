@@ -139,11 +139,13 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 #define Fatal_( cond, ...)      a_err(cond, exit(-1)  , __VA_ARGS__);
 #define Return_(err , ...)      a_err(err , return err, __VA_ARGS__);
 #define RetVal_(cond, val, ...) a_err(cond, return val, __VA_ARGS__);
+#define Goto_(  err , lbl, ...) a_err(err<0, goto  lbl, __VA_ARGS__);
 
 // Standard system error
-#define SysFatal_( cond, ...)      a_err(cond, exit(-1)  , __VA_ARGS__, strerror(err));
-#define SysReturn_(err , ...)      a_err(err , return err, __VA_ARGS__, strerror(err));
-#define SysRetVal_(cond, val, ...) a_err(cond, return val, __VA_ARGS__, strerror(err));
+#define SysFatal_( cond, ...)        a_err(cond , exit(-1)  , __VA_ARGS__, strerror(err));
+#define SysReturn_(err , ...)        a_err(err  , return err, __VA_ARGS__, strerror(err));
+#define SysRetVal_(cond, val,   ...) a_err(cond , return val, __VA_ARGS__, strerror(err));
+#define SndGoto_(   err, label, ...) a_err(err<0, goto label, __VA_ARGS__, snd_strerror(err));
 
 // Standard alsa error
 #define SndCheck_( err, ...)      a_err(err<0, ;         , __VA_ARGS__, snd_strerror(err));

@@ -1,8 +1,17 @@
+/*! \file duplex.h
+    \brief A Documented file.
+
+    Details.
+*/
+
 #pragma once
 
 #include "buffer.h"
 #include "timer.h"
 
+/** Basics
+ *  More details about this class.
+ */
 typedef struct
 {
     snd_pcm_t* play;

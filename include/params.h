@@ -1,7 +1,18 @@
+/*! \file params.h
+    \brief A Documented file.
+
+    Details.
+*/
+
 #pragma once
 
 #include "types.h"
 
+/*! \class sndx_params_t
+        \brief Hardware config common to playback and capture (except for channels).
+
+    Hold variables frequently used in other functions.
+*/
 typedef struct
 {
     u32       channels;
@@ -18,6 +29,12 @@ void sndx_dump_params(sndx_params_t* params, snd_output_t* output);
 
 int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);
 
+/*! \fn sndx_set_hw_params
+        \brief Set config for hardware params.
+
+   @param strict_channels Whether to honor requested channels, or make best effort
+   @param buffer_size     Equals (period_size * nperiods)
+ */
 int sndx_set_hw_params(           //
     snd_pcm_t*   pcm,             //
     hw_params_t* hw_params,       //
