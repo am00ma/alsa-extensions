@@ -5,27 +5,6 @@
 */
 #include "duplex.h"
 
-// int jack2_open(
-//     sndx_duplex_t* d, const char* playback_device, const char* capture_device, sndx_params_t* params, output_t* output);
-// int jack2_close(sndx_duplex_t* d);
-// int jack2_start(sndx_duplex_t* d);
-// int jack2_stop(sndx_duplex_t* d);
-// int jack2_restart(sndx_duplex_t* d);
-// int jack2_wait(sndx_duplex_t* d);
-// int jack2_read(sndx_duplex_t* d);
-// int jack2_write(sndx_duplex_t* d);
-//
-// sndx_duplex_ops_t jack2_ops = {
-//     .open_fn    = jack2_open,    //
-//     .close_fn   = jack2_close,   //
-//     .start_fn   = jack2_start,   //
-//     .stop_fn    = jack2_stop,    //
-//     .restart_fn = jack2_restart, //
-//     .wait_fn    = jack2_wait,    //
-//     .read_fn    = jack2_read,    //
-//     .write_fn   = jack2_write    //
-// };
-
 // Application
 int main()
 {

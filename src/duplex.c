@@ -226,7 +226,7 @@ int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_
     uframes_t silence_max = 0;
     RANGE(i, 2)
     {
-        err = sndx_duplex_writebuf(d, play_buf, d->period_size, frames_silence, &silence_max);
+        err = sndx_duplex_writebuf(d, play_buf, d->period_size, 0, frames_silence, &silence_max);
         Goto(err < 0, __error, "Failed writebuf");
     }
 
@@ -237,7 +237,7 @@ __error:
     return err;
 }
 
-sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* frames, uframes_t* max)
+sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t offset, uframes_t* frames, uframes_t* max)
 {
     i64 r;
     do { r = snd_pcm_mmap_readi(d->capt, buf, len); } while (r == -EAGAIN);
@@ -247,7 +247,7 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* f
         if ((long)*max < r) *max = r;
 
         // After read, copy to soft buffer as float
-        sndx_buffer_dev_to_buf(d->buf_capt, 0, r);
+        sndx_buffer_dev_to_buf(d->buf_capt, offset, r);
     }
     else {
         sndx_dump_duplex_status(d, d->out);
@@ -257,12 +257,13 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* f
     return r;
 }
 
-sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* frames, uframes_t* max)
+sframes_t
+sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t offset, uframes_t* frames, uframes_t* max)
 {
     snd_output_t* output = d->out;
 
     // Write from soft buffer to device as int
-    sndx_buffer_buf_to_dev(d->buf_play, 0, len);
+    sndx_buffer_buf_to_dev(d->buf_play, offset, len);
 
     long r;
     int  frame_bytes = (snd_pcm_format_physical_width(d->format) / 8) * d->ch_play;
