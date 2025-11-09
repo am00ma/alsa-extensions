@@ -1,7 +1,12 @@
+/*! \file memops.h
+    \brief Taking memops functions from jack2 memops.c
+
+    Extending for step in float buffer to enable support for
+    both interleaved and non-interleaved failed.
+*/
 #pragma once
 
 #include "types.h"
-#include <math.h> // IWYU pragma: keep
 
 // clang-format off
 void sample_move_d32_sS(char* dst, float* src, u32 dst_skip, u32 src_skip, uframes_t frames);

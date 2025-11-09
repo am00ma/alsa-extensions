@@ -1,7 +1,6 @@
 #pragma once
 
 #include "types.h"
-#include <sys/time.h>
 
 typedef struct timespec tspec_t;
 

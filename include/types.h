@@ -7,6 +7,7 @@
  * Common includes
  * ------------------------------------------------------------------------- */
 #include <stddef.h>         // ptrdiff_t
+#include <math.h>           // IWYU pragma: keep
 #include <sys/poll.h>       // Poll fds
 #include <alsa/asoundlib.h> // ALSA
 
@@ -19,10 +20,10 @@ typedef uint64_t u64;
 typedef int32_t  i32;
 typedef int64_t  i64;
 
-typedef struct int24_t
-{
-    uint8_t x[3];
-} int24_t;
+// typedef struct int24_t
+// {
+//     uint8_t x[3];
+// } int24_t;
 
 /* ---------------------------------------------------------------------------
  * Aliases

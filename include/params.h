@@ -1,9 +1,8 @@
 /*! \file params.h
-    \brief A Documented file.
+    \brief Setting software and hardware params for single pcm device.
 
-    Details.
+    'Vendoring' of snd_spcm_set_params(...).
 */
-
 #pragma once
 
 #include "types.h"
@@ -25,15 +24,31 @@ typedef struct
 
 } sndx_params_t;
 
+/*! \fn sndx_dump_params(sndx_params_t* params, snd_output_t* output)
+ *  \brief Dump params to output.
+ */
 void sndx_dump_params(sndx_params_t* params, snd_output_t* output);
 
+/*! \fn sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size)
+ *  \brief Set buffer size specifically based on typical latency requirements specified in `spcm`
+ */
 int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);
 
-/*! \fn sndx_set_hw_params
-        \brief Set config for hardware params.
+/*! \fn sndx_set_hw_params(
+            snd_pcm_t*   pcm,
+            hw_params_t* hw_params,
+            u32          rate,
+            u32*         channels,
+            format_t     format,
+            uframes_t    buffer_size,
+            uframes_t    period_size,
+            access_t     access,
+            bool         strict_channels,
+            output_t*    output)
+    \brief Set config for hardware params.
 
-   @param strict_channels Whether to honor requested channels, or make best effort
-   @param buffer_size     Equals (period_size * nperiods)
+   \param strict_channels Whether to honor requested channels, or make best effort
+   \param buffer_size     Equals (period_size * nperiods)
  */
 int sndx_set_hw_params(           //
     snd_pcm_t*   pcm,             //
@@ -47,6 +62,16 @@ int sndx_set_hw_params(           //
     bool         strict_channels, //
     output_t*    output);
 
+/*! \fn sndx_set_sw_params(
+            snd_pcm_t*   pcm,
+            sw_params_t* sw_params,
+            uframes_t    buffer_size,
+            uframes_t    period_size,
+            output_t*    output);
+    \brief Set config for software params.
+
+   Main things to note are min_avail, start_threshold, stop_threshold.
+ */
 int sndx_set_sw_params(       //
     snd_pcm_t*   pcm,         //
     sw_params_t* sw_params,   //
@@ -54,6 +79,20 @@ int sndx_set_sw_params(       //
     uframes_t    period_size, //
     output_t*    output);
 
+/*! \fn sndx_set_params(
+            snd_pcm_t* pcm,
+            u32*       channels,
+            format_t*  format,
+            u32*       rate,
+            uframes_t* buffer_size,
+            uframes_t* period_size,
+            access_t   _access,
+            bool       strict_channels,
+            output_t*  output);
+    \brief Set config for both hardware and software params.
+
+   Details.
+ */
 int sndx_set_params(            //
     snd_pcm_t* pcm,             //
     u32*       channels,        //
