@@ -40,3 +40,28 @@ void timestamp_get(snd_pcm_t* handle, snd_timestamp_t* timestamp)
     SndFatal(err, "Stream status error: %s\n");
     snd_pcm_status_get_trigger_tstamp(status, timestamp);
 }
+
+void sndx_duplex_timer_start(sndx_timer_t* t, snd_pcm_t* play, snd_pcm_t* capt)
+{
+    timestamp_now(&t->start);
+    timestamp_get(play, &t->play);
+    timestamp_get(capt, &t->capt);
+}
+
+void sndx_duplex_timer_stop(sndx_timer_t* t, uframes_t frames_in, u32 rate, output_t* output)
+{
+    a_info("Timer status:");
+
+    if (t->play.tv_sec == t->capt.tv_sec && //
+        t->play.tv_usec == t->capt.tv_usec)
+        a_info("  Hardware sync");
+
+    i64 diff  = timestamp_diff_now(&t->start);
+    i64 mtime = frames_to_micro(frames_in, rate);
+    a_info("  Elapsed real  : %ld us", diff);
+    a_info("  Elapsed device: %ld us", mtime);
+    a_info("  Diff (device - real): %ld us", mtime - diff);
+    a_info("  Playback = %li.%i", (long)t->play.tv_sec, (int)t->play.tv_usec);
+    a_info("  Capture  = %li.%i", (long)t->capt.tv_sec, (int)t->capt.tv_usec);
+    a_info("  Diff     = %li", timestamp_diff(t->play, t->capt));
+}

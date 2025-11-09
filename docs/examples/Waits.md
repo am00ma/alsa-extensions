@@ -146,8 +146,14 @@ Pseudocode:
    - `retry_cnt`
    - `poll_enter`, `poll_ret`
 
+   - Initialize:
+     - status : -1
+     - delayed_usecs : 0
+     - need_capture : d->capt ? 1 : 0;
+     - need_playback : d->play ? 1 : 0;
+
 3. if `extra_fd >=0`, set `need_playback` to 0 TODO: Why??
-4. Mark start of while loop with label `again`
+4. Mark start of while loop with label `again` (usually caused by gdb, or exit from signal)
 
 5. `while ((need_playback || need_capture) && !xrun_detected)`
    1. More locals:

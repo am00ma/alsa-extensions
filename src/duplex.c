@@ -1,6 +1,7 @@
 #include "duplex.h"
 #include "params.h"
 #include "types.h"
+#include <math.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -74,7 +75,7 @@ int sndx_duplex_open(                //
 
     sndx_duplex_t* d;
 
-    d = (sndx_duplex_t*)calloc(1, sizeof(*d));
+    d = calloc(1, sizeof(*d));
     if (!d) return -ENOMEM;
 
     d->out = output;
@@ -157,6 +158,18 @@ int sndx_duplex_open(                //
     err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
+    // Allocate poll fds
+    d->pfds.play_nfds     = snd_pcm_poll_descriptors_count(d->play);
+    d->pfds.capt_nfds     = snd_pcm_poll_descriptors_count(d->capt);
+    d->pfds.nfds          = d->pfds.play_nfds + d->pfds.capt_nfds;
+    d->pfds.addr          = calloc(d->pfds.nfds, sizeof(pfd_t));
+    d->pfds.poll_timeout  = 1000;
+    d->pfds.poll_next     = 0;
+    d->pfds.poll_late     = 0;
+    d->pfds.period_usecs  = (u64)floor((((float)d->period_size) / d->rate) * 1000000.0f);
+    d->pfds.xrun_count    = 0;
+    d->pfds.process_count = 0;
+
     *duplexp = d;
 
     return 0;
@@ -170,6 +183,8 @@ __close:
 
 int sndx_duplex_close(sndx_duplex_t* d)
 {
+    if (!d) return 0;
+
     int err;
 
     snd_output_t* output = d->out;
@@ -189,15 +204,42 @@ int sndx_duplex_close(sndx_duplex_t* d)
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
+    if (d->pfds.addr)
+    {
+        free(d->pfds.addr);
+        d->pfds.addr = nullptr;
+    }
+
     free(d);
     d = nullptr;
 
     return 0;
 }
 
-sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* frames, uframes_t* max)
+int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence)
 {
-    long r;
+    int err;
+
+    err = snd_pcm_format_set_silence(d->format, play_buf, d->period_size * d->ch_play);
+    SndGoto(err, __error, "Failed snd_pcm_format_set_silence: %s");
+
+    uframes_t silence_max = 0;
+    RANGE(i, 2)
+    {
+        err = sndx_duplex_writebuf(d, play_buf, d->period_size, frames_silence, &silence_max);
+        Goto(err < 0, __error, "Failed writebuf");
+    }
+
+    return 0;
+
+__error:
+    sndx_dump_duplex_status(d, d->out);
+    return err;
+}
+
+sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* frames, uframes_t* max)
+{
+    i64 r;
     do { r = snd_pcm_mmap_readi(d->capt, buf, len); } while (r == -EAGAIN);
     if (r > 0)
     {
@@ -213,6 +255,31 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, long len, uframes_t* 
 
     // showstat(handle, 0);
     return r;
+}
+
+sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t* frames, uframes_t* max)
+{
+    snd_output_t* output = d->out;
+
+    // Write from soft buffer to device as int
+    sndx_buffer_buf_to_dev(d->buf_play, 0, len);
+
+    long r;
+    int  frame_bytes = (snd_pcm_format_physical_width(d->format) / 8) * d->ch_play;
+
+    while (len > 0)
+    {
+        r = snd_pcm_mmap_writei(d->play, buf, len);
+        if (r == -EAGAIN) continue;
+        else if (r == -EINVAL) { SysReturn_(-EINVAL, "Invalid args, check access (MMAP / RW): %s"); }
+        else if (r < 0) SndReturn_(r, "Failed: snd_pcm_mmap_writei: %s");
+        buf     += r * frame_bytes;
+        len     -= r;
+        *frames += r;
+        if ((long)*max < r) *max = r;
+    }
+
+    return 0;
 }
 
 void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
@@ -234,73 +301,4 @@ void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_p
         RANGE(chn, buf_play->channels)
         RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i + (buf_size * chn)] * (*gain); }
     }
-}
-
-sframes_t sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, long len, size_t* frames)
-{
-    snd_output_t* output = d->out;
-
-    // Write from soft buffer to device as int
-    sndx_buffer_buf_to_dev(d->buf_play, 0, len);
-
-    long r;
-    int  frame_bytes = (snd_pcm_format_physical_width(d->format) / 8) * d->ch_play;
-
-    while (len > 0)
-    {
-        r = snd_pcm_mmap_writei(d->play, buf, len);
-        if (r == -EAGAIN) continue;
-        else if (r == -EINVAL) { SysReturn_(-EINVAL, "Invalid args, check access (MMAP / RW): %s"); }
-        else if (r < 0) SndReturn_(r, "Failed: snd_pcm_mmap_writei: %s");
-        buf     += r * frame_bytes;
-        len     -= r;
-        *frames += r;
-    }
-
-    return 0;
-}
-
-int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence)
-{
-    int err;
-
-    err = snd_pcm_format_set_silence(d->format, play_buf, d->period_size * d->ch_play);
-    SndGoto(err, __error, "Failed snd_pcm_format_set_silence: %s");
-
-    RANGE(i, 2)
-    {
-        err = sndx_duplex_writebuf(d, play_buf, d->period_size, frames_silence);
-        Goto(err < 0, __error, "Failed writebuf");
-    }
-
-    return 0;
-
-__error:
-    sndx_dump_duplex_status(d, d->out);
-    return err;
-}
-
-void sndx_duplex_timer_start(sndx_duplex_t* d)
-{
-    timestamp_now(&d->timer.start);
-    timestamp_get(d->play, &d->timer.play);
-    timestamp_get(d->capt, &d->timer.capt);
-}
-
-void sndx_duplex_timer_stop(sndx_duplex_t* d, uframes_t frames_in, output_t* output)
-{
-    a_info("Timer status:");
-
-    if (d->timer.play.tv_sec == d->timer.capt.tv_sec && //
-        d->timer.play.tv_usec == d->timer.capt.tv_usec)
-        a_info("  Hardware sync");
-
-    i64 diff  = timestamp_diff_now(&d->timer.start);
-    i64 mtime = frames_to_micro(frames_in, d->rate);
-    a_info("  Elapsed real  : %ld us", diff);
-    a_info("  Elapsed device: %ld us", mtime);
-    a_info("  Diff (device - real): %ld us", mtime - diff);
-    a_info("  Playback = %li.%i", (long)d->timer.play.tv_sec, (int)d->timer.play.tv_usec);
-    a_info("  Capture  = %li.%i", (long)d->timer.capt.tv_sec, (int)d->timer.capt.tv_usec);
-    a_info("  Diff     = %li", timestamp_diff(d->timer.play, d->timer.capt));
 }

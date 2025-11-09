@@ -22,3 +22,6 @@ typedef struct
     tspec_t start;
 
 } sndx_timer_t;
+
+void sndx_duplex_timer_start(sndx_timer_t* t, snd_pcm_t* play, snd_pcm_t* capt);
+void sndx_duplex_timer_stop(sndx_timer_t* t, uframes_t frames_in, u32 rate, output_t* output);

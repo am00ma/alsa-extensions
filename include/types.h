@@ -13,6 +13,7 @@
 typedef ptrdiff_t isize;
 typedef size_t    usize;
 
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef int32_t  i32;
@@ -127,6 +128,14 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 #define a_info( ...)  { a_log(__VA_ARGS__);  a_log("\n"); }
 #define a_error(...)  { a_log(COLOR_RED);    a_log(__VA_ARGS__); a_log(COLOR_RESET"\n");}
 #define a_title(...)  { a_log(STYLE_PTITLE); a_log(__VA_ARGS__); a_log(COLOR_RESET"\n");}
+
+// Temporary
+#ifdef DEBUG
+#define a_debug(...) { a_log(COLOR_BLUE); a_log(__VA_ARGS__); a_log(COLOR_RESET"\n");}
+#else
+#define a_debug( ... )
+#endif // DEBUG
+
 
 #define a_err(err, behaviour, ...)            \
     if (err) {                                \
