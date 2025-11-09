@@ -1,5 +1,5 @@
-/*! \file buffer.h
- *  \brief Implementation of backing buffer for device, in non-interleaved float format.
+/** @file buffer.h
+ *  @brief Implementation of backing buffer for device, in non-interleaved float format.
  *
  *  Details.
  */
@@ -7,8 +7,7 @@
 
 #include "types.h"
 
-/*! \struct sndx_buffer_t
- *  \brief Backing buffer for device, in non-interleaved float format.
+/** @brief Backing buffer for device, in non-interleaved float format.
  *
  *  TODO:
  *      - What is size of buffer??
@@ -31,39 +30,25 @@ typedef struct
 
 } sndx_buffer_t;
 
-/*! \fn sndx_dump_buffer(sndx_buffer_t* b, snd_output_t* output)
- *  \brief Dump buffer params to output.
- */
+/** @brief Dump buffer params to output. */
 void sndx_dump_buffer(sndx_buffer_t* b, snd_output_t* output);
 
-/*! \fn sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, snd_output_t* output)
- *  \brief Dump buffer areas to output.
- */
+/** @brief Dump buffer areas to output. */
 void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, snd_output_t* output);
 
-/*! \fn sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output)
- *  \brief Allocate memory for the backing buffer and set up channel areas.
- *
- */
+/** @brief Allocate memory for the backing buffer and set up channel areas. */
 int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output);
 
-/*! \fn sndx_buffer_close(sndx_buffer_t* b)
- *  \brief Free memory from the backing buffer.
- */
+/** @brief Free memory from the backing buffer. */
 void sndx_buffer_close(sndx_buffer_t* b);
 
-/*! \fn sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
- *  \brief Convert float samples to device format and copy to device.
- */
+/** @brief Convert float samples to device format and copy to device. */
 void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames);
 
-/*! \fn sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
- *  \brief Convert device format samples to float format and copy to buffer.
- */
+/** @brief Convert device format samples to float format and copy to buffer. */
 void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames);
 
-/*! \fn sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)
- *  \brief Helper for testing.
+/** @brief Helper for testing.
  *
  *  Maps a given char* buffer to device areas.
  *  TODO: Draw figure

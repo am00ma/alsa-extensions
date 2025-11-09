@@ -1,5 +1,5 @@
-/*! \file duplex.h
- *  \brief Fat analogue of `snd_pcm_t` which holds 2 handles, one playback and one capture.
+/** @file duplex.h
+ *  @brief Fat analogue of `snd_pcm_t` which holds 2 handles, one playback and one capture.
  *
  *  Manages:
  *      1. PCM handles
@@ -10,12 +10,8 @@
 #pragma once
 
 #include "buffer.h"
-#include "timer.h"
 
-typedef struct pollfd pfd_t;
-
-/** \struct sndx_duplex_t
- *  \brief Analogue of `snd_pcm_t` that manages pcm handles, buffers, polling, timing.
+/** @brief Analogue of `snd_pcm_t` that manages pcm handles, buffers, polling, timing.
  *
  *  Provided in audio callback.
  *
@@ -51,54 +47,17 @@ typedef struct sndx_duplex_t
     sndx_buffer_t* buf_play;
     sndx_buffer_t* buf_capt;
 
-    struct
-    {
-
-        pfd_t* addr;
-        u32    nfds;
-        u32    play_nfds;
-        u32    capt_nfds;
-
-        u64 poll_next;
-        u64 poll_last;
-        u64 poll_late;
-        u64 poll_timeout;
-
-        u64 period_usecs;
-        u64 last_wait_ust;
-
-        u64 xrun_count;
-        u64 process_count;
-
-    } pfds;
-
-    sndx_timer_t timer;
-
     output_t* out;
 
 } sndx_duplex_t;
 
-/*! \fn sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
- *  \brief Dump duplex params to output.
- */
+/** @brief Dump duplex params to output. */
 void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output);
 
-/*! \fn sndx_dump_duplex_status(sndx_duplex_t* d, snd_output_t* output)
- *  \brief Dump duplex status to output.
- */
+/** @brief Dump duplex status to output. */
 void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output);
 
-/*! \fn sndx_duplex_open(
- *          sndx_duplex_t** duplexp,
- *          const char*     playback_device,
- *          const char*     capture_device,
- *          format_t        format,
- *          u32             rate,
- *          uframes_t       buffer_size,
- *          uframes_t       period_size,
- *          access_t        _access,
- *          snd_output_t*   output)
- *  \brief Open a pair of playback and capture devices and link them.
+/** @brief Open a pair of playback and capture devices and link them.
  *
  *  Process:
  *      1. Open pcm handles
@@ -122,8 +81,7 @@ int sndx_duplex_open(                //
     access_t        _access,         //
     snd_output_t*   output);
 
-/*! \fn sndx_duplex_close(sndx_duplex_t** duplexp)
- *  \brief Close playback and capture handles.
+/** @brief Close playback and capture handles.
  *
  *  Process:
  *      1. Free buffers
@@ -140,14 +98,7 @@ int sndx_duplex_open(                //
  */
 int sndx_duplex_close(sndx_duplex_t* d);
 
-/*! \fn sndx_duplex_readbuf(
- *          sndx_duplex_t* d,
- *          char*          buf,
- *          i64            len,
- *          uframes_t      offset,
- *          uframes_t*     frames,
- *          uframes_t*     max)
- *  \brief Read from buffer
+/** @brief Read from buffer
  *
  * TODO: Is this device buffer?
  */
@@ -159,14 +110,7 @@ sframes_t sndx_duplex_readbuf( //
     uframes_t*     frames,
     uframes_t*     max);
 
-/*! \fn sndx_duplex_writebuf(
- *          sndx_duplex_t* d,
- *          char*          buf,
- *          i64            len,
- *          uframes_t      offset,
- *          uframes_t*     frames,
- *          uframes_t*     max)
- *  \brief Write to buffer
+/** @brief Write to buffer
  *
  * TODO: Is this device buffer?
  */
@@ -178,11 +122,7 @@ sframes_t sndx_duplex_writebuf( //
     uframes_t*     frames,
     uframes_t*     max);
 
-/*! \fn sndx_duplex_write_initial_silence(
- *          sndx_duplex_t* d,
- *          char*          play_buf,
- *          uframes_t*     frames_silence)
- *  \brief Write initial silence to get the playback device started.
+/** @brief Write initial silence to get the playback device started.
  *
  * Usually set to `period_size * nperiods`.
  */
@@ -191,9 +131,13 @@ int sndx_duplex_write_initial_silence( //
     char*          play_buf,
     uframes_t*     frames_silence);
 
-/*! \fn sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
- *  \brief Helper to copy first channel of capture to all channels of playback (for mono -> stereo)
+/** @fn sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
+ *  @brief Helper to copy first channel of capture to all channels of playback (for mono -> stereo)
  *
  * Most cheap USB audio dongles have 2 playback and 1 capture channel.
  */
-void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data);
+void sndx_duplex_copy_capt_to_play( //
+    sndx_buffer_t* buf_capt,
+    sndx_buffer_t* buf_play,
+    sframes_t      len,
+    void*          data);

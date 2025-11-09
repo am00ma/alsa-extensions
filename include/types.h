@@ -1,3 +1,6 @@
+/** @file types.h
+ *  @brief Type aliases and macros to make code readable.
+ */
 #pragma once
 // clang-format off
 

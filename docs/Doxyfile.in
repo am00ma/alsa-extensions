@@ -1,6 +1,7 @@
 PROJECT_NAME           = "Customized project name"
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
 
+WARN_IF_UNDOCUMENTED   = NO
 QUIET                  = YES
 RECURSIVE              = YES
 FILE_PATTERNS          = "*.c *.h *.md"

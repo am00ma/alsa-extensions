@@ -1,9 +1,9 @@
-/*! \file memops.h
-    \brief Taking memops functions from jack2 memops.c
-
-    Extending for step in float buffer to enable support for
-    both interleaved and non-interleaved failed.
-*/
+/** @file memops.h
+ *  @brief Conversion of sample formats to and from float (functions from jack2 -> common/memops.c)
+ *
+ *  Extending for step in float buffer to enable support for
+ *  both interleaved and non-interleaved failed.
+ */
 #pragma once
 
 #include "types.h"

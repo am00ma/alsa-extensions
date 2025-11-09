@@ -1,7 +1,6 @@
 #include "duplex.h"
 #include "params.h"
 #include "types.h"
-#include <math.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -158,17 +157,17 @@ int sndx_duplex_open(                //
     err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
-    // Allocate poll fds
-    d->pfds.play_nfds     = snd_pcm_poll_descriptors_count(d->play);
-    d->pfds.capt_nfds     = snd_pcm_poll_descriptors_count(d->capt);
-    d->pfds.nfds          = d->pfds.play_nfds + d->pfds.capt_nfds;
-    d->pfds.addr          = calloc(d->pfds.nfds, sizeof(pfd_t));
-    d->pfds.poll_timeout  = 1000;
-    d->pfds.poll_next     = 0;
-    d->pfds.poll_late     = 0;
-    d->pfds.period_usecs  = (u64)floor((((float)d->period_size) / d->rate) * 1000000.0f);
-    d->pfds.xrun_count    = 0;
-    d->pfds.process_count = 0;
+    // // Allocate poll fds
+    // d->pfds.play_nfds     = snd_pcm_poll_descriptors_count(d->play);
+    // d->pfds.capt_nfds     = snd_pcm_poll_descriptors_count(d->capt);
+    // d->pfds.nfds          = d->pfds.play_nfds + d->pfds.capt_nfds;
+    // d->pfds.addr          = calloc(d->pfds.nfds, sizeof(pfd_t));
+    // d->pfds.poll_timeout  = 1000;
+    // d->pfds.poll_next     = 0;
+    // d->pfds.poll_late     = 0;
+    // d->pfds.period_usecs  = (u64)floor((((float)d->period_size) / d->rate) * 1000000.0f);
+    // d->pfds.xrun_count    = 0;
+    // d->pfds.process_count = 0;
 
     *duplexp = d;
 
@@ -204,11 +203,11 @@ int sndx_duplex_close(sndx_duplex_t* d)
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
-    if (d->pfds.addr)
-    {
-        free(d->pfds.addr);
-        d->pfds.addr = nullptr;
-    }
+    // if (d->pfds.addr)
+    // {
+    //     free(d->pfds.addr);
+    //     d->pfds.addr = nullptr;
+    // }
 
     free(d);
     d = nullptr;

@@ -1,3 +1,6 @@
+/** @file xrun.h
+ *  @brief Various implementations of handling xruns
+ */
 #pragma once
 
 #include "types.h" // IWYU pragma: keep

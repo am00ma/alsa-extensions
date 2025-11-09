@@ -22,8 +22,8 @@ include(CTest)
 # =========================================================================
 find_package(Doxygen REQUIRED)
 
-set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
 set(DOXYGEN_QUIET                YES)
+set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
 
 set(DOXYGEN_RECURSIVE              YES)
 set(DOXYGEN_CREATE_SUBDIRS         YES)
@@ -68,7 +68,6 @@ set(LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/buffer.c
     ${CMAKE_SOURCE_DIR}/src/xrun.c
     ${CMAKE_SOURCE_DIR}/src/timer.c
-    ${CMAKE_SOURCE_DIR}/src/playback.c
     ${CMAKE_SOURCE_DIR}/src/duplex.c)
 set(LIB_INCLUDES ${CMAKE_SOURCE_DIR}/include)
 set(LIB_LIBS     m asound sndfile resample)
