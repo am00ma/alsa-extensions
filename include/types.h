@@ -13,6 +13,7 @@
 #include <math.h>           // IWYU pragma: keep
 #include <sys/poll.h>       // Poll fds
 #include <alsa/asoundlib.h> // ALSA
+#include <limits.h>         // INT_MAX
 
 typedef ptrdiff_t isize;
 typedef size_t    usize;
@@ -157,7 +158,7 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 // Standard system error
 #define SysFatal_( cond, ...)        a_err(cond , exit(-1)  , __VA_ARGS__, strerror(err));
 #define SysReturn_(err , ...)        a_err(err  , return err, __VA_ARGS__, strerror(err));
-#define SysRetVal_(cond, val,   ...) a_err(cond , return val, __VA_ARGS__, strerror(err));
+#define SysRetVal_(err , val,   ...) a_err(err  , return val, __VA_ARGS__, strerror(err));
 #define SndGoto_(   err, label, ...) a_err(err<0, goto label, __VA_ARGS__, snd_strerror(err));
 
 // Standard alsa error

@@ -33,6 +33,7 @@ set(DOXYGEN_EXAMPLE_PATH           ${CMAKE_SOURCE_DIR}/examples)
 set(DOXYGEN_EXAMPLE_PATTERNS       *.c)
 set(DOXYGEN_EXAMPLE_RECURSIVE      YES)
 set(DOXYGEN_INCLUDE_PATH           ${CMAKE_SOURCE_DIR}/include)
+set(DOXYGEN_IMAGE_PATH             ${CMAKE_SOURCE_DIR}/docs/img)
 
 set(DOXYGEN_PLANTUML_JAR_PATH   $(HOME)/.local/bin/plantuml.jar)
 set(DOXYGEN_HAVE_DOT            YES)

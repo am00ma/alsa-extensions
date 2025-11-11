@@ -1,7 +1,7 @@
 /** @file buffer.h
  *  @brief Implementation of backing buffer for device, in non-interleaved float format.
  *
- *  Details.
+ *  @image html channel-areas.svg
  */
 #pragma once
 

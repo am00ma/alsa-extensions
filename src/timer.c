@@ -41,6 +41,16 @@ void timestamp_get(snd_pcm_t* handle, snd_timestamp_t* timestamp)
     snd_pcm_status_get_trigger_tstamp(status, timestamp);
 }
 
+/** @brief Get clock time in microseconds */
+u64 get_microseconds()
+{
+    u64     utime;
+    tspec_t time;
+    clock_gettime(CLOCK_MONOTONIC, &time);
+    utime = (u64)time.tv_sec * 1e6 + (u64)time.tv_nsec / 1e3;
+    return utime;
+}
+
 void sndx_duplex_timer_start(sndx_timer_t* t, snd_pcm_t* play, snd_pcm_t* capt)
 {
     timestamp_now(&t->start);

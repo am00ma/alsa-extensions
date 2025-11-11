@@ -22,6 +22,9 @@ long timestamp_diff(snd_timestamp_t t1, snd_timestamp_t t2);
 /** @brief TODO: what does this do */
 void timestamp_get(snd_pcm_t* handle, snd_timestamp_t* timestamp);
 
+/** @brief Get clock time in microseconds */
+u64 get_microseconds();
+
 /** @brief Captures snapshot of play and capt for timing metrics. */
 typedef struct
 {
