@@ -1,6 +1,5 @@
 #include "duplex.h"
 #include "params.h"
-#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -55,10 +54,6 @@ void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output)
     snd_pcm_status_dump(status, output);
 }
 
-/** \example latency.c
- * This is an example of how to use the Example_Test class.
- * More details about this example.
- */
 int sndx_duplex_open(                //
     sndx_duplex_t** duplexp,         //
     const char*     playback_device, //

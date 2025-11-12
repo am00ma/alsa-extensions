@@ -1,7 +1,18 @@
 /** @file buffer.h
  *  @brief Implementation of backing buffer for device, in non-interleaved float format.
  *
+ *  While it is easy to just use a random buffer for each channel for backing,
+ *  we try to stay within ALSA framework and define them as channel areas.
+ *
+ *  This could potentially help us use convert functions from ALSA,
+ *  in case we want the backing buffer to be interleaved but maybe
+ *  that is not necessary after all.
+ *
  *  @image html channel-areas.svg
+ *
+ *  Used in the following functions:
+ *
+ *  @see sndx_duplex_open
  */
 #pragma once
 

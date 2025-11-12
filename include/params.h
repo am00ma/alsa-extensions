@@ -2,6 +2,16 @@
  *  @brief Setting software and hardware params for single pcm device.
  *
  *  'Vendoring' of snd_spcm_set_params(...).
+ *
+ *  Necessary changes:
+ *  1. Set period_size and buffer_size instead of times
+ *  2. Allow different playback and capture channels
+ *  3. Customization of start and stop thresholds
+ *  4. Ensuring `buffer_size / period_size = periods` is integer
+ *  5. Enabling of timerstamping in sw
+ *  6. Ensuring `avail_min == period_size` in sw
+ *  7. Better error handling
+ *
  */
 #pragma once
 

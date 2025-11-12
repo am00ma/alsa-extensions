@@ -22,9 +22,14 @@ include(CTest)
 # =========================================================================
 find_package(Doxygen REQUIRED)
 
-set(DOXYGEN_QUIET                YES)
-set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+set(DOXYGEN_QUIET                  YES)
+set(DOXYGEN_WARN_IF_UNDOCUMENTED   NO)
+set(DOXYGEN_WARN_IF_INCOMPLETE_DOC NO)
+set(DOXYGEN_WARN_NO_PARAMDOC       NO)
 
+set(DOXYGEN_OPTIMIZE_OUTPUT_FOR_C  YES)
+set(DOXYGEN_EXTRACT_STATIC         YES)
+set(DOXYGEN_EXTRACT_ALL            YES)
 set(DOXYGEN_RECURSIVE              YES)
 set(DOXYGEN_CREATE_SUBDIRS         YES)
 set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
