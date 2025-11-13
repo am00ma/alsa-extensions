@@ -1,26 +1,25 @@
-/*! \file interface.h
-    \brief Interface for various (wait, read, write [WRW]) loop implementations
-
-    Details.
-*/
+/** @file interface.h
+ *  @brief Interface for various (wait, read, write [WRW]) loop implementations.
+ *
+ *  1. open, close: Initialization, setting params, allocation and freeing resources
+ *  2. start, stop: Write silence, start/stop wait-read-write loop
+ *  3. wait, xrun: Wait for `avail = period_size`, handle xruns
+ *  4. read, write: Read/write mmaped to/from device areas from/to buffer areas
+ *  5. callbacks: User defined callbacks
+ *
+ */
 #pragma once
 
+#include "duplex.h"
 #include "params.h"
 
-typedef struct sndx_duplex_t sndx_duplex_t;
-
-/*! \fn sndx_duplex_callback_fn
-    \brief Audio callback function, with duplex fully exposed for now
-
-    Details.
-*/
-typedef int (*sndx_duplex_callback_fn)(sndx_duplex_t* d, sframes_t offset, sframes_t frames, void* data);
-
-/*! \fn sndx_duplex_open_fn
-    \brief Open pcm handles, set hardware and software params, allocate structs
-
-    Details.
-*/
+/** @brief Open pcm handles, set hardware and software params, allocate structs
+ *
+ *  Steps:
+ *    1. setting of channels
+ *    2. setting of formats, rate
+ *
+ */
 typedef int (*sndx_duplex_open_fn)(sndx_duplex_t* d,
                                    const char*    playback_device,
                                    const char*    capture_device,
@@ -28,48 +27,58 @@ typedef int (*sndx_duplex_open_fn)(sndx_duplex_t* d,
                                    void*          data,
                                    output_t*      output);
 
-/*! \fn sndx_duplex_close_fn
-    \brief Free memory and close pcm handles
-
-    Details.
-*/
+/** @brief Free memory and close pcm handles
+ *
+ *  Guaranteed to succeed, checks for nil before freeing, sets nil after freeing
+ */
 typedef int (*sndx_duplex_close_fn)(sndx_duplex_t* d, void* data);
 
-/*! \fn sndx_duplex_start_fn
-    \brief Write silence and prepare for WRW loop
-
-    Details.
-*/
+/** @brief Write silence and prepare for WRW loop
+ *
+ *  Steps:
+ *    1. Call `snd_pcm_prepare`
+ *    2. Zero the buffer / alloc special silence buffer
+ *    3. Write to device using mmap
+ *    4. Check status changed from PREPARED to RUNNING
+ */
 typedef int (*sndx_duplex_start_fn)(sndx_duplex_t* d, void* data);
 
-/*! \fn sndx_duplex_stop_fn
-    \brief Drop pcm handles
-
-    Details.
-*/
+/** @brief Drop pcm handles
+ *
+ *  Steps:
+ *      1. ? Zero the buffer / alloc special silence buffer
+ *      2. ? Write to device using mmap
+ *      3. Drop handles
+ */
 typedef int (*sndx_duplex_stop_fn)(sndx_duplex_t* d, void* data);
 
-/*! \fn sndx_duplex_restart_fn
-    \brief Basically stop and start again
-
-    Used in xrun_recovery.
-*/
+/** @brief Calls stop and start in succession
+ *
+ *  Used in xrun_recovery.
+ */
 typedef int (*sndx_duplex_restart_fn)(sndx_duplex_t* d, void* data);
 
-/*! \fn sndx_duplex_wait_fn
-    \brief Wait using poll/snd_pcm_wait/..
+// TODO: xrun_recovery
 
-    Details.
-*/
+/** @brief Wait using poll/snd_pcm_wait/..
+ *
+ *  Many possible implementations, with various ways to recover from xrun
+ *      1. `snd_pcm_wait`
+ *      2. `poll`
+ *
+ *  Questions:
+ *      1. In duplex operation, which pcm to wait on? Fabian's talk: both
+ *      2. How is device disconnection handled?
+ *      3. Is it possible to just use `pcm_recover`?
+ */
 typedef int (*sndx_duplex_wait_fn)(sndx_duplex_t* d, void* data);
 
-/*! \fn sndx_duplex_read_fn
-    \brief Read from device to buffer
-
-    Converts from integer format of device to float format for buffer.
-        Device: interleaved
-        Buffer: non-interleaved
-*/
+/** @brief Read from device to buffer
+ *
+ *   Converts from integer format of device to float format for buffer.
+ *       Device: interleaved
+ *       Buffer: non-interleaved
+ */
 typedef int (*sndx_duplex_read_fn)( //
     sndx_duplex_t* d,
     uframes_t      cap_avail,
@@ -78,13 +87,12 @@ typedef int (*sndx_duplex_read_fn)( //
     uframes_t*     in_max,
     void*          data);
 
-/*! \fn sndx_duplex_write_fn
-    \brief Audio callback function, with duplex fully exposed for now
-
-    Converts from float format for buffer to integer format of device.
-        Buffer: non-interleaved
-        Device: interleaved
-*/
+/** @brief Write from buffer to device
+ *
+ *   Converts from float format for buffer to integer format of device.
+ *       Buffer: non-interleaved
+ *       Device: interleaved
+ */
 typedef int (*sndx_duplex_write_fn)( //
     sndx_duplex_t* d,
     uframes_t      play_avail,
@@ -93,8 +101,10 @@ typedef int (*sndx_duplex_write_fn)( //
     uframes_t*     out_max,
     void*          data);
 
-// TODO: xrun_recovery
+/** @brief Audio callback function, with duplex fully exposed for now */
+typedef int (*sndx_duplex_callback_fn)(sndx_duplex_t* d, sframes_t offset, sframes_t frames, void* data);
 
+/** @brief Coherent set of duplex operations */
 typedef struct sndx_duplex_ops_t
 {
     // Open, alloc, close
