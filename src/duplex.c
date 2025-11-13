@@ -19,8 +19,8 @@ void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
     a_info("  format     : %s", snd_pcm_format_name(d->format));
     a_info("  rate       : %d", d->rate);
     a_info("  period_size: %d", d->period_size);
-    a_info("  buffer_size: %d", d->period_size * d->nperiods);
-    a_info("  nperiods   : %d", d->nperiods);
+    a_info("  buffer_size: %d", d->period_size * d->periods);
+    a_info("  nperiods   : %d", d->periods);
     a_info("  linked     : %d", d->linked);
 
     a_title("Play:");
@@ -135,7 +135,7 @@ int sndx_duplex_open(                //
     d->format      = play_params.format;
     d->rate        = rate;
     d->period_size = period_size;
-    d->nperiods    = buffer_size / period_size;
+    d->periods     = buffer_size / period_size;
 
     d->ch_play = play_params.channels;
     d->ch_capt = capt_params.channels;

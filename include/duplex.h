@@ -39,7 +39,7 @@ typedef struct sndx_duplex_t
     format_t format;
     u32      rate;
     u32      period_size;
-    u32      nperiods;
+    u32      periods;
     u32      ch_play;
     u32      ch_capt;
     bool     linked;

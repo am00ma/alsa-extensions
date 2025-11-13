@@ -20,12 +20,13 @@
  *    2. setting of formats, rate
  *
  */
-typedef int (*sndx_duplex_open_fn)(sndx_duplex_t* d,
-                                   const char*    playback_device,
-                                   const char*    capture_device,
-                                   sndx_params_t* params,
-                                   void*          data,
-                                   output_t*      output);
+typedef int (*sndx_duplex_open_fn)( //
+    sndx_duplex_t* d,
+    const char*    playback_device,
+    const char*    capture_device,
+    sndx_params_t* params,
+    void*          data,
+    output_t*      output);
 
 /** @brief Free memory and close pcm handles
  *
@@ -102,7 +103,11 @@ typedef int (*sndx_duplex_write_fn)( //
     void*          data);
 
 /** @brief Audio callback function, with duplex fully exposed for now */
-typedef int (*sndx_duplex_callback_fn)(sndx_duplex_t* d, sframes_t offset, sframes_t frames, void* data);
+typedef int (*sndx_duplex_callback_fn)( //
+    sndx_duplex_t* d,
+    sframes_t      offset,
+    sframes_t      frames,
+    void*          data);
 
 /** @brief Coherent set of duplex operations */
 typedef struct sndx_duplex_ops_t

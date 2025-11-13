@@ -1,6 +1,11 @@
 # Xruns
 
-Examples:
+Functions to recover from:
+
+1. `snd_pcm_wait`, `poll`
+2. `snd_pcm_avail_update`
+3. `snd_pcm_mmap_begin`, `snd_pcm_mmap_commit`
+4. `snd_pcm_readi`, `snd_pcm_writei`
 
 | no  | program         | xrun                                                                                                                                                                                                          | comments |
 | --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -15,13 +20,6 @@ Examples:
 | 9   | jack            | -EPIPE, -ESTRPIPE for `avail_update`, `mmap_commit`; `alsa_driver_xrun_recovery` -> complete with different statuses, though only prints, does not distinguish on return, also keeps track of `delayed_usecs` |          |
 | 10  | juce            | only -EPIPE and `pcm_recover`                                                                                                                                                                                 |          |
 | 11  | rtaudio         | mix of -EPIPE and state based, `pcm_recover`                                                                                                                                                                  |          |
-
-Functions to recover from:
-
-1. `snd_pcm_wait`, `poll`
-2. `snd_pcm_avail_update`
-3. `snd_pcm_mmap_begin`, `snd_pcm_mmap_commit`
-4. `snd_pcm_readi`, `snd_pcm_writei`
 
 ## pcm
 

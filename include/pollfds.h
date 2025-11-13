@@ -2,10 +2,9 @@
  *  @brief Manager for all measurements and memory related to polling.
  *
  *  Manages:
- *      1. Poll addresses
- *      2. Counts of descriptors
- *      3. Poll timing
- *      4. Xrun and delays
+ *      1. Poll addresses, counts
+ *      2. Poll timing
+ *      3. Xrun and delays
  */
 #pragma once
 
@@ -13,13 +12,14 @@
 
 typedef struct pollfd pfd_t;
 
-/** @brief Manager for all measurements and memory related to polling.
+/** @brief Struct to handle polling and poll timings
  *
- *  Manages:
- *      1. Poll addresses
- *      2. Counts of descriptors
- *      3. Poll timing
- *      4. Xrun and delays
+ *  Initialized in duplex_start
+ *
+ *  Details:
+ *      1. Poll addresses, counts
+ *      2. Poll timing
+ *      3. Xrun and delays
  */
 typedef struct sndx_pollfds_t
 {
@@ -70,8 +70,8 @@ typedef enum sndx_pollfds_poll_error_t
  *        err = sndx_pollfds_poll(p, &avail, output);
  *
  *        switch (err) {
- *        case POLLFD_NEEDS_RESTART: { restart(); };
- *        case POLLFD_RECOVERABLE: { notify_xrun(); goto __retry; };
+ *        case POLLFD_FATAL: { return -1; };
+ *        case POLLFD_RECOVERABLE: { xrun_recovery(); restart(); goto __retry; };
  *        case POLLFD_SUCCESS: break;
  *        }
  *
