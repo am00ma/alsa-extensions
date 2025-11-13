@@ -50,10 +50,10 @@ Details:
 
 | no  | program         | hw      | comments                                                                                                                                                                                                                             |
 | --- | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | pcm-simple      | exact   | `snd_pcm_set_params`                                                                                                                                                                                                                 |
+| 1   | pcm_min         | exact   | `snd_pcm_set_params`                                                                                                                                                                                                                 |
 | 2   | pcm             | buftime | custom `set_hwparams`, also sets `resample=1`, uses `buffer_time_near` , `period_time_near`                                                                                                                                          |
 | 3   | pcm-multithread | exact   | custom `setup_params` with no error handling                                                                                                                                                                                         |
-| 4   | audio-time      | exact   | `snd_pcm_set_params`, also uses `snd_pcm_hw_params_supports_audio_ts_type`                                                                                                                                                           |
+| 4   | audio_time      | exact   | `snd_pcm_set_params`, also uses `snd_pcm_hw_params_supports_audio_ts_type`                                                                                                                                                           |
 | 5   | latency         | bufsize | custom `setparams_stream` (uses `rate_near`), special `setparams_bufsize`; also `snd_pcm_hw_params_set_period_wakeup` if using `sys_latency`                                                                                         |
 | 6   | aplay           | -       |                                                                                                                                                                                                                                      |
 | 7   | axfer           | -       |                                                                                                                                                                                                                                      |
@@ -74,10 +74,10 @@ Details:
 
 | no  | program         | sw                                                                            | comments                                                                                                                                     |
 | --- | --------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | pcm-simple      | start, avail_min                                                              | `snd_pcm_set_params`                                                                                                                         |
+| 1   | pcm_min         | start, avail_min                                                              | `snd_pcm_set_params`                                                                                                                         |
 | 2   | pcm             | start, avail_min, period_wakeup                                               | custom `set_swparams`, customization to set `snd_pcm_sw_params_set_period_event` based on `sys_latency`                                      |
 | 3   | pcm-multithread | -                                                                             | no sw params set                                                                                                                             |
-| 4   | audio-time      | tstamp_mode, tstamp_type                                                      | custom to set timestamps                                                                                                                     |
+| 4   | audio_time      | tstamp_mode, tstamp_type                                                      | custom to set timestamps                                                                                                                     |
 | 5   | latency         | start, avail_min                                                              | sets start to highest possible so that we have to manually `snd_pcm_start`                                                                   |
 | 6   | aplay           |                                                                               |                                                                                                                                              |
 | 7   | axfer           |                                                                               |                                                                                                                                              |
@@ -92,10 +92,10 @@ Details:
 
 | no  | program         | nonblock            | comments                                       |
 | --- | --------------- | ------------------- | ---------------------------------------------- |
-| 1   | pcm-simple      | no                  | play: no                                       |
+| 1   | pcm_min         | no                  | play: no                                       |
 | 2   | pcm             | no                  | play: no                                       |
 | 3   | pcm-multithread | no                  | play: no                                       |
-| 4   | audio-time      | yes                 | capt: yes, play: no                            |
+| 4   | audio_time      | yes                 | capt: yes, play: no                            |
 | 5   | latency         | yes, based on block | both: block                                    |
 | 6   | aplay           |                     |                                                |
 | 7   | axfer           |                     |                                                |
@@ -110,10 +110,10 @@ Details:
 
 | no  | program         | link | comments               |
 | --- | --------------- | ---- | ---------------------- |
-| 1   | pcm-simple      | -    |                        |
+| 1   | pcm_min         | -    |                        |
 | 2   | pcm             | -    |                        |
 | 3   | pcm-multithread | -    |                        |
-| 4   | audio-time      | yes  | capt, play             |
+| 4   | audio_time      | yes  | capt, play             |
 | 5   | latency         | yes  | capt, play             |
 | 6   | aplay           |      |                        |
 | 7   | axfer           |      |                        |
@@ -141,19 +141,19 @@ Preparing and dropping frames from pcm, may be called from xrun recovery
 
 Relevant snd function: `snd_pcm_delay`
 
-| no  | program         | timing | comments |
-| --- | --------------- | ------ | -------- |
-| 1   | pcm-simple      |        |          |
-| 2   | pcm             |        |          |
-| 3   | pcm-multithread |        |          |
-| 4   | audio-timer     |        |          |
-| 5   | latency         |        |          |
-| 6   | aplay           |        |          |
-| 7   | axfer           |        |          |
-| 8   | aloop           |        |          |
-| 9   | jack            |        |          |
-| 10  | juce            |        |          |
-| 11  | rtaudio         |        |          |
+| no  | program         | timing | comments   |
+| --- | --------------- | ------ | ---------- |
+| 1   | pcm_min         | count  | frames out |
+| 2   | pcm             |        |            |
+| 3   | pcm-multithread |        |            |
+| 4   | audio_time      |        |            |
+| 5   | latency         |        |            |
+| 6   | aplay           |        |            |
+| 7   | axfer           |        |            |
+| 8   | aloop           |        |            |
+| 9   | jack            |        |            |
+| 10  | juce            |        |            |
+| 11  | rtaudio         |        |            |
 
 ### Resampling
 
@@ -161,10 +161,10 @@ Relevant snd function: `snd_pcm_delay`
 
 | no  | program         | resampling | comments |
 | --- | --------------- | ---------- | -------- |
-| 1   | pcm-simple      |            |          |
+| 1   | pcm_min         |            |          |
 | 2   | pcm             |            |          |
 | 3   | pcm-multithread |            |          |
-| 4   | audio-timer     |            |          |
+| 4   | audio_time      |            |          |
 | 5   | latency         |            |          |
 | 6   | aplay           |            |          |
 | 7   | axfer           |            |          |
@@ -182,10 +182,10 @@ Relevant snd function: `snd_pcm_delay`
 
 | no  | program         | wait                                    | comments |
 | --- | --------------- | --------------------------------------- | -------- |
-| 1   | pcm-simple      | -                                       |          |
+| 1   | pcm_min         | -                                       |          |
 | 2   | pcm             | `wait`, `poll`, `async`                 |          |
 | 3   | pcm-multithread |                                         |          |
-| 4   | audio-timer     |                                         |          |
+| 4   | audio_time      |                                         |          |
 | 5   | latency         |                                         |          |
 | 6   | aplay           |                                         |          |
 | 7   | axfer           |                                         |          |
@@ -198,10 +198,10 @@ Relevant snd function: `snd_pcm_delay`
 
 | no  | program         | xrun | comments                                                                                                                                                          | comments |
 | --- | --------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | pcm-simple      |      | no                                                                                                                                                                |          |
+| 1   | pcm_min         |      | no                                                                                                                                                                |          |
 | 2   | pcm             |      | `xrun_recovery(handle, err)`                                                                                                                                      |          |
 | 3   | pcm-multithread |      | `pcm_recover` once                                                                                                                                                |          |
-| 4   | audio-time      |      | `pcm_wait`, exit if error                                                                                                                                         |          |
+| 4   | audio_time      |      | `pcm_wait`, exit if error                                                                                                                                         |          |
 | 5   | latency         |      | `pcm_wait`, `get_avail` -> checks avail till not -EAGAIN                                                                                                          |          |
 | 6   | aplay           |      | `xrun()`, `suspend()`, check EPIPE, ESTRPIPE                                                                                                                      |          |
 | 7   | axfer           |      | libasound.c: check EPIPE, ESTRPIPE, but also `pcm_prepare`; timer-mmap.c: based on `SND_PCM_STATE_...`, separate for read, write; irq-mmap: similar to timer-mmap |          |

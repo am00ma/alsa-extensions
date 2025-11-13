@@ -12,7 +12,7 @@
 | 1   | pcm-simple      | na                                      |          |
 | 2   | pcm             | `wait`, `poll`, `async`                 |          |
 | 3   | pcm-multithread |                                         |          |
-| 4   | audio-timer     |                                         |          |
+| 4   | audio-time      |                                         |          |
 | 5   | latency         |                                         |          |
 | 6   | aplay           |                                         |          |
 | 7   | axfer           |                                         |          |
