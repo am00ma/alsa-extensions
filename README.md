@@ -31,6 +31,11 @@ Details:
 
 ## Open, Close
 
+- Open: called once at start of program
+- Close: called once at the end of the program
+- If error in Open, is usually fatal.
+- Sometimes, buffer_size may need readjustment
+
 ### Hardware Params setup
 
 - rate
@@ -78,20 +83,44 @@ Details:
 | 7   | axfer           |                                                                               |                                                                                                                                              |
 | 8   | aloop           |                                                                               |                                                                                                                                              |
 | 9   | jack            | start, stop, silence_threshold, silence_size(deprecated?), avail_min, tstamps | TODO: what do the silence functions do? otherwise start is zero and stop is usual period_size \* periods (TODO: except in case of soft-mode) |
-| 10  | juce            |                                                                               |                                                                                                                                              |
+| 10  | juce            | start, stop, silence_threshold, silence_size                                  | start = period_size, stop = boundary, silence_threshold = 0, silence_size = boundary                                                         |
 | 11  | rtaudio         | start, stop, silence, silence_size                                            | silence_size is set to boundary, start is buffersize, stop is infinite, silence_threshold is 0; strangely, `avail_min` is not used           |
-
-### Linking devices
-
-- whether to manually start other devices
 
 ### Blocking/Non-blocking
 
 - whether to use wait
 
-### Access
+| no  | program         | nonblock            | comments                                       |
+| --- | --------------- | ------------------- | ---------------------------------------------- |
+| 1   | pcm-simple      | no                  | play: no                                       |
+| 2   | pcm             | no                  | play: no                                       |
+| 3   | pcm-multithread | no                  | play: no                                       |
+| 4   | audio-time      | yes                 | capt: yes, play: no                            |
+| 5   | latency         | yes, based on block | both: block                                    |
+| 6   | aplay           |                     |                                                |
+| 7   | axfer           |                     |                                                |
+| 8   | aloop           |                     |                                                |
+| 9   | jack            | yes then no         | Initally both nonblock, then both set to block |
+| 10  | juce            | yes                 | both: yes                                      |
+| 11  | rtaudio         | yes                 | both: yes                                      |
 
-- mmap / rw
+### Linking devices
+
+- whether to manually start other devices
+
+| no  | program         | link | comments               |
+| --- | --------------- | ---- | ---------------------- |
+| 1   | pcm-simple      | -    |                        |
+| 2   | pcm             | -    |                        |
+| 3   | pcm-multithread | -    |                        |
+| 4   | audio-time      | yes  | capt, play             |
+| 5   | latency         | yes  | capt, play             |
+| 6   | aplay           |      |                        |
+| 7   | axfer           |      |                        |
+| 8   | aloop           |      |                        |
+| 9   | jack            | yes  | play, capt             |
+| 10  | juce            | -    |                        |
+| 11  | rtaudio         | yes  | handles[0], handles[1] |
 
 ### Mixers
 
@@ -100,9 +129,17 @@ Details:
 
 ## Start, Stop
 
+Preparing and dropping frames from pcm, may be called from xrun recovery
+
 ### Timing
 
-- timestamps, slave/master clocks
+3 ways to keep time (TODO: Which are frames and which are microseconds?):
+
+- snd timestamps
+- system timestamps
+- count of frames in, frames out
+
+Relevant snd function: `snd_pcm_delay`
 
 | no  | program         | timing | comments |
 | --- | --------------- | ------ | -------- |
@@ -140,21 +177,22 @@ Details:
 
 ### Wait op
 
+- if blocking, no wait required
 - `snd_pcm_wait`, `poll`, `epoll`, `select`
 
-| no  | program         | wait | comments |
-| --- | --------------- | ---- | -------- |
-| 1   | pcm-simple      |      |          |
-| 2   | pcm             |      |          |
-| 3   | pcm-multithread |      |          |
-| 4   | audio-time      |      |          |
-| 5   | latency         |      |          |
-| 6   | aplay           |      |          |
-| 7   | axfer           |      |          |
-| 8   | aloop           |      |          |
-| 9   | jack            |      |          |
-| 10  | juce            |      |          |
-| 11  | rtaudio         |      |          |
+| no  | program         | wait                                    | comments |
+| --- | --------------- | --------------------------------------- | -------- |
+| 1   | pcm-simple      | -                                       |          |
+| 2   | pcm             | `wait`, `poll`, `async`                 |          |
+| 3   | pcm-multithread |                                         |          |
+| 4   | audio-timer     |                                         |          |
+| 5   | latency         |                                         |          |
+| 6   | aplay           |                                         |          |
+| 7   | axfer           |                                         |          |
+| 8   | alsaloop        |                                         |          |
+| 9   | jack2           | `poll`                                  |          |
+| 10  | juce            | `snd_pcm_wait`                          |          |
+| 11  | rtaudio         | no waiting (wierdly, also non-blocking) |          |
 
 ### Xrun recovery
 
