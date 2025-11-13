@@ -11,8 +11,8 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:USB,0", "hw:USB,0",          //
-        SND_PCM_FORMAT_S24_3LE,          //
+        "hw:PCH,0", "hw:PCH,0",          //
+        SND_PCM_FORMAT_S16_LE,           //
         48000, 256, 128,                 //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
