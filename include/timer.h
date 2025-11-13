@@ -6,32 +6,41 @@
 #include "types.h"
 
 typedef struct timespec tspec_t;
+typedef snd_timestamp_t tstamp_t;
 
+/** @brief Convert time in frames to time in microseconds */
 #define frames_to_micro(frames, rate) (u64)((frames * 1000000LL) + (rate / 2)) / rate;
+
+/** @brief Get system time (prob same as get_microseconds) */
 #define timestamp_now(tstamp)                                                                                          \
     if (clock_gettime(CLOCK_MONOTONIC_RAW, tstamp)) printf("clock_gettime() failed\n");
 
 // TODO: Sort out snd time and sys/time timestamps
 
-/** @brief TODO: what does this do */
-u64 timestamp_diff_now(tspec_t* tstamp);
+/** @brief Get difference from given system time in microseconds */
+u64 timespec_diff_now(tspec_t* tstamp);
 
-/** @brief TODO: what does this do */
-long timestamp_diff(snd_timestamp_t t1, snd_timestamp_t t2);
+/** @brief Difference in trigger timestamps in microseconds */
+i64 timestamp_diff(tstamp_t t1, tstamp_t t2);
 
-/** @brief TODO: what does this do */
-void timestamp_get(snd_pcm_t* handle, snd_timestamp_t* timestamp);
+/** @brief Wrapper for `snd_pcm_status_get_trigger_tstamp` */
+void timestamp_get(snd_pcm_t* handle, tstamp_t* timestamp);
 
 /** @brief Get clock time in microseconds */
 u64 get_microseconds();
 
-/** @brief Captures snapshot of play and capt for timing metrics. */
+/** @brief Keeps track of timing using sys, snd, frames */
 typedef struct
 {
 
-    snd_timestamp_t play;
-    snd_timestamp_t capt;
-    tspec_t         start;
+    tspec_t start; ///< System time before while loop
+    tspec_t end;   ///< System time after while loop
+
+    tstamp_t stamp_play; ///< Alsa trigger stamp for playback
+    tstamp_t stamp_capt; ///< Alsa trigger stamp for capture
+
+    uframes_t frames_play; ///< Frames written by playback
+    uframes_t frames_capt; ///< Frames read by capture
 
 } sndx_timer_t;
 
