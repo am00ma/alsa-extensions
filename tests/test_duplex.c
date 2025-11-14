@@ -107,7 +107,7 @@ int main()
 
             // Mono to stereo ( copy float data )
             RANGE(chn, d->ch_play)
-            RANGE(i, offset, (isize)(offset + avail_capt))
+            RANGE(i, buf_offset_read, (isize)(buf_offset_read + avail_capt))
             {
                 d->buf_play->bufdata[(chn * d->buf_play->frames) + i] = d->buf_capt->bufdata[i];
                 // d->buf_play->bufdata[(chn * d->buf_play->frames) + i] = 0;
@@ -128,76 +128,24 @@ int main()
             RANGE(chn, d->ch_play) { d->buf_play->dev[chn] = areas_play[chn]; }
 
             // Write from float buffer
-            sndx_buffer_buf_to_dev(d->buf_play, buf_offset_read, avail_play);
+            sndx_buffer_buf_to_dev(d->buf_play, buf_offset_write, avail_play);
 
             // Decrement buffer
-            buf_offset_read += avail_play;
-            buf_avail_write -= avail_play;
+            buf_offset_write += avail_play;
+            buf_avail_write  -= avail_play;
 
-            // // Need to completely write, as we could be in middle of device buffer
-            // sframes_t nleft_play;
-            // sframes_t nwritten_play;
-            // uframes_t to_write;
-            // // uframes_t buf_offset;
-            //
-            // // buf_offset    = 0;
-            // nwritten_play = 0;
-            // nleft_play    = avail_play;
-            //
-            // // NOTE: This creates an artificial spin loop
-            // // Instead, keep track of buffer read, written
-            // isize waited_count = 0;
-            // while (nleft_play)
-            // {
-            //     // Check how much is available (necessary, @see snd_pcm_mmap_begin)
-            //     err = snd_pcm_avail(d->play);
-            //     SndGoto_(err, __close, "Failed: snd_pcm_avail_update: %s");
-            //
-            //     // NOTE: This happens quite often
-            //     if (err == 0)
-            //     {
-            //         waited_count++;
-            //         continue;
-            //     }
-            //
-            //     // Restrict nleft_play (already less than period_size)
-            //     to_write = err > nleft_play ? nleft_play : err;
-            //
-            //     // a_debug("  snd_pcm_avail = %d\n"   //
-            //     //         "     avail_play = %ld\n"  //
-            //     //         "     nleft_play = %ld\n"  //
-            //     //         "       to_write = %ld\n"  //
-            //     //         "         offset = %ld\n", //
-            //     //         err, avail_play, nleft_play, to_write, offset);
-            //
-            //     // Get the play buffer
-            //     print_(offset, "1. %ld");
-            //     err = snd_pcm_mmap_begin(d->play, &areas_play, &offset, &to_write);
-            //     print_(offset, "2. %ld");
-            //     SndGoto_(err, __close, "Failed: snd_pcm_mmap_begin: %s");
-            //
-            //     RANGE(chn, d->ch_play) { d->buf_play->dev[chn] = areas_play[chn]; }
-            //
-            //     // Write from float buffer
-            //     sndx_buffer_buf_to_dev(d->buf_play, offset, to_write);
-            //
-            //     // Commit write
-            //     err = snd_pcm_mmap_commit(d->play, offset, to_write);
-            //     SndGoto_(err, __close, "Failed: snd_pcm_mmap_commit: %s");
-            //
-            //     nleft_play    -= to_write;
-            //     nwritten_play += to_write;
-            //     // buf_offset    += to_write;
-            // }
-            // print_(waited_count);
+            // Lazy ring buffer !!!
+            if (buf_offset_read == buf_offset_write)
+            {
+                buf_offset_read  = 0;
+                buf_offset_write = 0;
+                buf_avail_write  = 0;
+                // a_info("Reset buffer");
+            }
 
-            // err = nwritten_play != (sframes_t)avail_play;
-            // Goto_(-err, __close,                       //
-            //       "Could not write as much as read:\n" //
-            //       "  nwritten_play = %ld\n"            //
-            //       "     avail_play = %ld\n"            //
-            //       "         offset = %ld\n",           //
-            //       nwritten_play, avail_play, offset);
+            // Commit write
+            err = snd_pcm_mmap_commit(d->play, offset, avail_play);
+            SndGoto_(err, __close, "Failed: snd_pcm_mmap_commit: %s");
 
             // Register frames to written
             timer.frames_play += avail_play;
