@@ -1,6 +1,8 @@
 #include "duplex.h"
+#include "buffer.h"
 #include "params.h"
 #include "types.h"
+#include <alsa/asoundlib.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -193,21 +195,39 @@ int sndx_duplex_close(sndx_duplex_t* d)
     return 0;
 }
 
-int sndx_duplex_write_initial_silence( //
-    sndx_duplex_t* d,
-    char*          play_buf,
-    uframes_t*     frames_silence)
+int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
 {
-    int err;
+    int       err;
+    output_t* output = d->out;
 
-    err = snd_pcm_format_set_silence(d->format, play_buf, d->period_size * d->ch_play);
-    SndGoto(err, __error, "Failed snd_pcm_format_set_silence: %s");
+    // Prepare the device area
+    const area_t* areas;
 
-    uframes_t silence_max = 0;
-    RANGE(i, 2)
+    sframes_t nleft  = d->period_size * d->periods;
+    uframes_t offset = 0;
+    uframes_t avail  = 0;
+
+    while (nleft)
     {
-        err = sndx_duplex_writebuf(d, play_buf, d->period_size, 0, frames_silence, &silence_max);
-        Goto(err < 0, __error, "Failed writebuf");
+        err = snd_pcm_avail_update(d->play);
+        SndGoto_(err, __error, "Failed: snd_pcm_avail_update: %s");
+
+        // Restrict to nleft
+        avail = err > nleft ? nleft : err;
+
+        // Restrict to period_size
+        avail = avail > d->period_size ? d->period_size : avail;
+
+        err = snd_pcm_mmap_begin(d->play, &areas, &offset, &avail);
+        SndGoto_(err, __error, "Failed: snd_pcm_mmap_begin: %s");
+
+        err = snd_pcm_areas_silence(areas, offset, d->ch_play, avail, d->format);
+        SndGoto_(err, __error, "Failed: snd_pcm_area_silence: %s");
+
+        err = snd_pcm_mmap_commit(d->play, offset, avail);
+        SndGoto_(err, __error, "Failed: snd_pcm_mmap_commit: %s");
+
+        nleft -= avail;
     }
 
     return 0;
