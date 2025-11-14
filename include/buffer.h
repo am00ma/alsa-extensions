@@ -33,9 +33,11 @@ typedef struct
     u32       channels; ///< Audio channels
     uframes_t frames;   ///< Typically, `period_size * nperiods`
 
-    area_t* dev;  ///< Interleaved, backed by device
-    area_t* buf;  ///< Non-interleaved, backed by `float* data`
-    float*  data; ///< Backing for buf [frames * channels]
+    area_t* dev; ///< Interleaved, backed by `float* devdata` which is mmapped to device
+    area_t* buf; ///< Non-interleaved, backed by `float* bufdata`
+
+    char*  devdata; ///< Backing for dev [frames * channels]
+    float* bufdata; ///< Backing for buf [frames * channels]
 
 } sndx_buffer_t;
 
@@ -56,10 +58,3 @@ void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames
 
 /** @brief Convert device format samples to float format and copy to buffer. */
 void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames);
-
-/** @brief Helper for testing.
- *
- *  Maps a given char* buffer to device areas.
- *  TODO: Draw figure for sndx_buffer_map_dev_to_samples
- */
-void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples);

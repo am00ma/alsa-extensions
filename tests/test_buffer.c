@@ -25,15 +25,11 @@ int main()
         sndx_buffer_t* b;
         err = sndx_buffer_open(&b, formats[i], channels, frames, output);
 
-        char* samples = calloc(b->frames * b->channels * b->bytes, sizeof(char));
-
-        sndx_buffer_map_dev_to_samples(b, samples);
-
         // Confirm dev areas are mapped
         sndx_dump_buffer(b, output);
 
         // Set some data
-        RANGE(i, frames) { b->data[i] = (float)i / frames; }
+        RANGE(i, frames) { b->bufdata[i] = (float)i / frames; }
 
         // Check areas
         sndx_dump_buffer_areas(b, offset, frames, output);
@@ -42,7 +38,7 @@ int main()
         sndx_buffer_buf_to_dev(b, offset, frames);
 
         // Reset buf
-        RANGE(i, frames) { b->data[i] = 0.0; }
+        RANGE(i, frames) { b->bufdata[i] = 0.0; }
 
         // Check areas
         sndx_dump_buffer_areas(b, offset, frames, output);
@@ -52,8 +48,6 @@ int main()
 
         // Check areas
         sndx_dump_buffer_areas(b, offset, frames, output);
-
-        free(samples);
 
         sndx_buffer_close(b);
     }

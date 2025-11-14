@@ -1,4 +1,5 @@
 #include "duplex.h"
+#include <alsa/asoundlib.h>
 
 int main()
 {
@@ -18,14 +19,31 @@ int main()
         output);
     SndFatal(err, "Failed sndx_duplex_open: %s");
 
+    // Should be prepared
+    sndx_dump_duplex_status(d, output);
+
     err = sndx_duplex_write_initial_silence(d);
     SndCheck(err, "Failed sndx_duplex_write_initial_silence: %s");
 
-    // Should be prepared, next we just wait for capt
+    err = snd_pcm_start(d->play);
+    SndCheck(err, "Failed snd_pcm_start: %s");
+
+    // Should be running?
     sndx_dump_duplex_status(d, output);
 
-    // Simulate one loop
-    err = snd_pcm_wait(d->capt, 1000);
+    // // Start prep for loop -> on error goto __error
+    // uframes_t frames_out = 0;
+    // uframes_t frames_in  = 0;
+    // uframes_t in_max     = 0;
+    // uframes_t out_max    = 0;
+    //
+    // // Read write loop
+    // sframes_t r, cap_avail;
+    // while (frames_in < 10)
+    // {
+    //     cap_avail = d->period_size;
+    //     snd_pcm_wait(d->capt, 1000);
+    // }
 
     err = sndx_duplex_close(d);
     SndFatal(err, "Failed sndx_duplex_close: %s");

@@ -20,8 +20,8 @@ void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
     a_info("  ch_capt    : %d", d->ch_capt);
     a_info("  format     : %s", snd_pcm_format_name(d->format));
     a_info("  rate       : %d", d->rate);
-    a_info("  period_size: %d", d->period_size);
-    a_info("  buffer_size: %d", d->period_size * d->periods);
+    a_info("  period_size: %ld", d->period_size);
+    a_info("  buffer_size: %ld", d->period_size * d->periods);
     a_info("  nperiods   : %d", d->periods);
     a_info("  linked     : %d", d->linked);
 
@@ -107,8 +107,8 @@ int sndx_duplex_open(                //
             (period_size == play_params.period_size));
     Goto_(err, __close, "Failed: params check");
 
-    // err = snd_pcm_nonblock(d->play, 0);
-    // SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
+    err = snd_pcm_nonblock(d->play, 0);
+    SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
 
     err = sndx_set_params(        //
         d->capt,                  //
@@ -195,6 +195,43 @@ int sndx_duplex_close(sndx_duplex_t* d)
     return 0;
 }
 
+int sndx_duplex_write_initial_silence_direct(sndx_duplex_t* d)
+{
+    int       err;
+    output_t* output = d->out;
+
+    char* buf[4096];
+
+    err = snd_pcm_format_set_silence(d->format, buf, d->period_size);
+    SndGoto_(err, __error, "Failed: snd_pcm_format_set_silence: %s");
+
+    sframes_t nleft    = d->period_size * d->periods;
+    sframes_t nwritten = 0;
+    uframes_t avail    = 0;
+
+    while (nleft)
+    {
+        // Restrict to nleft
+        avail = nleft;
+
+        // Restrict to period_size
+        avail = avail > d->period_size ? d->period_size : avail;
+
+        err = snd_pcm_mmap_writei(d->play, buf, avail);
+        SndGoto_(err, __error, "Failed: snd_pcm_mmap_begin: %s");
+
+        nleft    -= avail;
+        nwritten += avail;
+    }
+    a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", nwritten, d->period_size, d->periods);
+
+    return 0;
+
+__error:
+    sndx_dump_duplex_status(d, d->out);
+    return err;
+}
+
 int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
 {
     int       err;
@@ -203,9 +240,10 @@ int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
     // Prepare the device area
     const area_t* areas;
 
-    sframes_t nleft  = d->period_size * d->periods;
-    uframes_t offset = 0;
-    uframes_t avail  = 0;
+    sframes_t nleft    = d->period_size * d->periods;
+    sframes_t nwritten = 0;
+    uframes_t offset   = 0;
+    uframes_t avail    = 0;
 
     while (nleft)
     {
@@ -227,8 +265,10 @@ int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
         err = snd_pcm_mmap_commit(d->play, offset, avail);
         SndGoto_(err, __error, "Failed: snd_pcm_mmap_commit: %s");
 
-        nleft -= avail;
+        nleft    -= avail;
+        nwritten += avail;
     }
+    a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", nwritten, d->period_size, d->periods);
 
     return 0;
 
@@ -292,27 +332,4 @@ sframes_t sndx_duplex_writebuf( //
     }
 
     return 0;
-}
-
-void sndx_duplex_copy_capt_to_play( //
-    sndx_buffer_t* buf_capt,
-    sndx_buffer_t* buf_play,
-    sframes_t      len,
-    float*         gain)
-{
-    // Actual realtime check - can just return, but better to flag
-    AssertMsg(len >= 0, "Received negative len: %ld", len);
-
-    // Copy capture channels to playback
-    isize buf_size = buf_capt->frames; // buf_capt->frames == buf_play->frames Guaranteed by setup
-    if (buf_capt->channels == 1)
-    {
-        RANGE(chn, buf_play->channels)
-        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i] * (*gain); }
-    }
-    else if (buf_capt->channels == buf_play->channels)
-    {
-        RANGE(chn, buf_play->channels)
-        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i + (buf_size * chn)] * (*gain); }
-    }
 }

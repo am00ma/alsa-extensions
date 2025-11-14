@@ -39,8 +39,8 @@ void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames
     }
 
     // Data
-    a_log("  b->data: ");
-    RANGE(i, (isize)frames) { a_log("%2.2f | ", b->data[i]); }
+    a_log("  b->bufdata: ");
+    RANGE(i, (isize)frames) { a_log("%2.2f | ", b->bufdata[i]); }
     a_log("\n");
 }
 
@@ -61,14 +61,24 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
     b->buf = calloc(channels, sizeof(area_t));
     RetVal_(!b, -ENOMEM, "Failed calloc area_t b->buf");
 
-    b->data = calloc(channels * frames, sizeof(float));
-    RetVal_(!b, -ENOMEM, "Failed calloc float b->data");
+    b->bufdata = calloc(channels * frames, sizeof(float));
+    RetVal_(!b, -ENOMEM, "Failed calloc float b->bufdata");
+
+    b->devdata = calloc(channels * frames, b->bytes);
+    RetVal_(!b, -ENOMEM, "Failed calloc float b->devdata");
 
     RANGE(chn, b->channels)
     {
-        b->buf[chn].addr  = b->data;
+        b->buf[chn].addr  = b->bufdata;
         b->buf[chn].first = (b->frames * chn * sizeof(float) * 8);
         b->buf[chn].step  = sizeof(float) * 8;
+    }
+
+    RANGE(chn, b->channels)
+    {
+        b->dev[chn].addr  = b->devdata;
+        b->dev[chn].first = b->bytes * 8 * chn;
+        b->dev[chn].step  = b->bytes * 8 * b->channels;
     }
 
     *bufp = b;
@@ -80,25 +90,29 @@ void sndx_buffer_close(sndx_buffer_t* b)
 {
     if (!b) return;
 
-    if (b->dev) free(b->dev);
-    if (b->buf) free(b->buf);
-    if (b->data) free(b->data);
-    b->dev  = nullptr;
-    b->buf  = nullptr;
-    b->data = nullptr;
+    if (b->dev)
+    {
+        free(b->dev);
+        b->dev = nullptr;
+    }
+    if (b->buf)
+    {
+        free(b->buf);
+        b->buf = nullptr;
+    }
+    if (b->bufdata)
+    {
+        free(b->bufdata);
+        b->bufdata = nullptr;
+    }
+    if (b->devdata)
+    {
+        free(b->devdata);
+        b->devdata = nullptr;
+    }
 
     free(b);
     b = nullptr;
-}
-
-void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples)
-{
-    RANGE(chn, b->channels)
-    {
-        b->dev[chn].addr  = samples;
-        b->dev[chn].first = b->bytes * 8 * chn;
-        b->dev[chn].step  = b->bytes * 8 * b->channels;
-    }
 }
 
 void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)

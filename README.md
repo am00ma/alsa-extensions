@@ -131,6 +131,20 @@ Details:
 
 Preparing and dropping frames from pcm, may be called from xrun recovery
 
+Issues:
+
+1. How to set start_threshold? How does it affect pcm_start?
+
+Evidence:
+
+Case A: Playback in Nonblocking
+
+1. When start, stop threshold are = buffer_size,
+   and we use mmap_begin, mmap_commit,
+   we need to manually start playback with `snd_pcm_start(play)`
+2. When start, stop threshold are = buffer_size,
+   and we use mmap_writei, it switches to running automatically
+
 ### Timing
 
 - snd timestamps (usecs or nsecs)

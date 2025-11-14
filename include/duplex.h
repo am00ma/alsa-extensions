@@ -37,13 +37,13 @@ typedef struct sndx_duplex_t
     snd_pcm_t* play; ///< Playback pcm handle
     snd_pcm_t* capt; ///< Capture pcm handle
 
-    u32      ch_play;     ///< Set to min channels for playback pcm
-    u32      ch_capt;     ///< Set to min channels for capture pcm
-    format_t format;      ///< Currently assuming same
-    u32      rate;        ///< Aslo must match
-    u32      period_size; ///< Must match
-    u32      periods;     ///< Must match, buffer_size = period_size * periods
-    bool     linked;      ///< May not be possible based on play, capt
+    u32       ch_play;     ///< Set to min channels for playback pcm
+    u32       ch_capt;     ///< Set to min channels for capture pcm
+    format_t  format;      ///< Currently assuming same
+    u32       rate;        ///< Aslo must match
+    uframes_t period_size; ///< Must match
+    u32       periods;     ///< Must match, buffer_size = period_size * periods
+    bool      linked;      ///< May not be possible based on play, capt
 
     sndx_buffer_t* buf_play; ///< Connects float buffer to playback device area, used by write
     sndx_buffer_t* buf_capt; ///< Connects float buffer to capture device area, used by read
@@ -129,15 +129,4 @@ sframes_t sndx_duplex_writebuf( //
  * Usually set to `period_size * nperiods`.
  */
 int sndx_duplex_write_initial_silence(sndx_duplex_t* d);
-
-/** @fn sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
- *  @brief Helper to copy first channel of capture to all channels of playback (for mono -> stereo)
- *
- * Most cheap USB audio dongles have 2 playback and 1 capture channel.
- * Here we use float* gain as data
- */
-void sndx_duplex_copy_capt_to_play( //
-    sndx_buffer_t* buf_capt,
-    sndx_buffer_t* buf_play,
-    sframes_t      len,
-    float*         gain);
+int sndx_duplex_write_initial_silence_direct(sndx_duplex_t* d);
