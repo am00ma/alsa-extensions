@@ -107,8 +107,8 @@ int sndx_duplex_open(                //
             (period_size == play_params.period_size));
     Goto_(err, __close, "Failed: params check");
 
-    err = snd_pcm_nonblock(d->play, 0);
-    SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
+    // err = snd_pcm_nonblock(d->play, 0);
+    // SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
 
     err = sndx_set_params(        //
         d->capt,                  //
@@ -277,59 +277,25 @@ __error:
     return err;
 }
 
-sframes_t sndx_duplex_readbuf( //
+sframes_t sndx_duplex_read( //
     sndx_duplex_t* d,
-    char*          buf,
-    i64            len,
-    uframes_t      offset,
-    uframes_t*     frames,
-    uframes_t*     max)
+    uframes_t*     offset,
+    uframes_t*     frames)
 {
-    i64 r;
-    do { r = snd_pcm_mmap_readi(d->capt, buf, len); } while (r == -EAGAIN);
-    if (r > 0)
-    {
-        *frames += r;
-        if ((long)*max < r) *max = r;
 
-        // After read, copy to soft buffer as float
-        sndx_buffer_dev_to_buf(d->buf_capt, offset, r);
-    }
-    else {
-        sndx_dump_duplex_status(d, d->out);
-    }
+    // After read, copy to soft buffer as float
+    sndx_buffer_dev_to_buf(d->buf_capt, *offset, *frames);
 
-    // showstat(handle, 0);
-    return r;
+    return *frames;
 }
 
-sframes_t sndx_duplex_writebuf( //
+sframes_t sndx_duplex_write( //
     sndx_duplex_t* d,
-    char*          buf,
-    i64            len,
-    uframes_t      offset,
-    uframes_t*     frames,
-    uframes_t*     max)
+    uframes_t*     offset,
+    uframes_t*     frames)
 {
-    snd_output_t* output = d->out;
-
     // Write from soft buffer to device as int
-    sndx_buffer_buf_to_dev(d->buf_play, offset, len);
+    sndx_buffer_buf_to_dev(d->buf_play, *offset, *frames);
 
-    long r;
-    int  frame_bytes = (snd_pcm_format_physical_width(d->format) / 8) * d->ch_play;
-
-    while (len > 0)
-    {
-        r = snd_pcm_mmap_writei(d->play, buf, len);
-        if (r == -EAGAIN) continue;
-        else if (r == -EINVAL) { SysReturn_(-EINVAL, "Invalid args, check access (MMAP / RW): %s"); }
-        else if (r < 0) SndReturn_(r, "Failed: snd_pcm_mmap_writei: %s");
-        buf     += r * frame_bytes;
-        len     -= r;
-        *frames += r;
-        if ((long)*max < r) *max = r;
-    }
-
-    return 0;
+    return *frames;
 }

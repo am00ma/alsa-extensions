@@ -103,26 +103,20 @@ int sndx_duplex_close(sndx_duplex_t* d);
  *
  * Read from device to buffer, converting to float format
  */
-sframes_t sndx_duplex_readbuf( //
+sframes_t sndx_duplex_read( //
     sndx_duplex_t* d,
-    char*          buf,
-    i64            len,
-    uframes_t      offset,
-    uframes_t*     frames,
-    uframes_t*     max);
+    uframes_t*     offset,
+    uframes_t*     frames);
 
 /** @brief Write from buffer to device
  *
  *
  * Write from buffer to device, converting from float to device format
  */
-sframes_t sndx_duplex_writebuf( //
+sframes_t sndx_duplex_write( //
     sndx_duplex_t* d,
-    char*          buf,
-    i64            len,
-    uframes_t      offset,
-    uframes_t*     frames,
-    uframes_t*     max);
+    uframes_t*     offset,
+    uframes_t*     frames);
 
 /** @brief Write initial silence to get the playback device started.
  *
