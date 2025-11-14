@@ -4,12 +4,18 @@
  *  Checklist:
  *      1. Capture, playback are non-block (jack makes playback blocked)
  *      2. Interleaved mmap access
+ *      3. How to wait?
+ *          - jack polls and returns min avail from capture and playback
+ *      4. How to write and read with period_size?
+ *          - jack writes multiple times with playback in block mode
+ *          - jack also reads multiple times till nframes is exhausted, though capture is in nonblock mode
+ *          - jack warns when callback receives > period_size frames
+ *      5. in pcm, there is only playback, so not difficult
+ *      6. in others, they directly readi and writei
  *
  */
-#include "buffer.h"
 #include "duplex.h"
 #include "timer.h"
-#include "types.h"
 
 int main()
 {
