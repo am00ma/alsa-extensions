@@ -21,7 +21,7 @@ Extensions to alsa-lib API for duplex operation.
 - Assuming we use float as our internal format, the minimum number of copies/conversions:
   - Read -> directly from device channel areas to float buffer
   - Write -> directly from float buffer to device channel areas
-  - TODO: How to handle fx chains?
+  - NOTE: How to handle fx chains?
 
 Details:
 
@@ -133,11 +133,9 @@ Preparing and dropping frames from pcm, may be called from xrun recovery
 
 ### Timing
 
-3 ways to keep time (TODO: Which are frames and which are microseconds?):
-
-- snd timestamps
-- system timestamps
-- count of frames in, frames out
+- snd timestamps (usecs or nsecs)
+- system timestamps (nsecs)
+- count of frames in, frames out (uframes_t)
 
 Relevant snd function: `snd_pcm_delay`
 

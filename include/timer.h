@@ -1,12 +1,21 @@
 /** @file timer.h
  *  @brief Conversions, timestamping.
+ *
+ *  tspec_t  : system timestamp
+ *  tstamp_t : snd trigger timestamp
  */
 #pragma once
 
 #include "types.h"
 
+/** @brief Time spec (nanoseconds) from sys/time.h `{tv_secs, tv_nsecs}` */
 typedef struct timespec tspec_t;
+
+/** @brief Time spec (microseconds) from alsa `{tv_sec, tv_usec}` */
 typedef snd_timestamp_t tstamp_t;
+
+/** @brief High resolution time spec (nanoseconds) from alsa `{tv_sec, tv_nsec}` */
+typedef snd_htimestamp_t htstamp_t;
 
 /** @brief Convert time in frames to time in microseconds */
 #define frames_to_micro(frames, rate) (u64)((frames * 1000000LL) + (rate / 2)) / rate;
@@ -14,8 +23,6 @@ typedef snd_timestamp_t tstamp_t;
 /** @brief Get system time (prob same as get_microseconds) */
 #define timestamp_now(tstamp)                                                                                          \
     if (clock_gettime(CLOCK_MONOTONIC_RAW, tstamp)) printf("clock_gettime() failed\n");
-
-// TODO: Sort out snd time and sys/time timestamps
 
 /** @brief Get difference from given system time in microseconds */
 u64 timespec_diff_now(tspec_t* tstamp);

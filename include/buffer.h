@@ -20,13 +20,11 @@
 
 /** @brief Backing buffer for device, in non-interleaved float format.
  *
- *  TODO:
- *      - What is size of buffer??
- *      - allowed formats of device
- *      - format of buffer
- *      - how areas are defined
- *      - how data is kept leak free
- *      - diagram
+ *  Details:
+ *      - size of buffer: period_size * periods
+ *      - allowed formats of device: SND_PCM_FORMAT_S16_LE, SND_PCM_FORMAT_S24_3LE, SND_PCM_FORMAT_S32_LE
+ *      - format of buffer: float, non-interleaved
+ *      - how areas are defined: @see buffer.h
  */
 typedef struct
 {
@@ -62,6 +60,6 @@ void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames
 /** @brief Helper for testing.
  *
  *  Maps a given char* buffer to device areas.
- *  TODO: Draw figure
+ *  TODO: Draw figure for sndx_buffer_map_dev_to_samples
  */
 void sndx_buffer_map_dev_to_samples(sndx_buffer_t* b, char* samples);

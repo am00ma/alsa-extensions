@@ -99,9 +99,9 @@ int sndx_duplex_open(                //
  */
 int sndx_duplex_close(sndx_duplex_t* d);
 
-/** @brief Read from buffer
+/** @brief Read from device to buffer
  *
- * TODO: Is this device buffer?
+ * Read from device to buffer, converting to float format
  */
 sframes_t sndx_duplex_readbuf( //
     sndx_duplex_t* d,
@@ -111,9 +111,10 @@ sframes_t sndx_duplex_readbuf( //
     uframes_t*     frames,
     uframes_t*     max);
 
-/** @brief Write to buffer
+/** @brief Write from buffer to device
  *
- * TODO: Is this device buffer?
+ *
+ * Write from buffer to device, converting from float to device format
  */
 sframes_t sndx_duplex_writebuf( //
     sndx_duplex_t* d,
