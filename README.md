@@ -264,6 +264,20 @@ Relevant snd function: `snd_pcm_delay`
 
 ### To/From Device
 
+| no  | program         | read/write              | comments |
+| --- | --------------- | ----------------------- | -------- |
+| 1   | pcm_min         |                         |          |
+| 2   | pcm             |                         |          |
+| 3   | pcm-multithread |                         |          |
+| 4   | audio_time      |                         |          |
+| 5   | latency         |                         |          |
+| 6   | aplay           |                         |          |
+| 7   | axfer           |                         |          |
+| 8   | alsaloop        |                         |          |
+| 9   | jack            | mmap_begin, mmap_commit |          |
+| 10  | juce            | readi, writei           |          |
+| 11  | rtaudio         | readi, writei           |          |
+
 - readi/readn, mmap, ringbuffers
 
 ### To/From Files
