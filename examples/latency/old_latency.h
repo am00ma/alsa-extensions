@@ -1,8 +1,12 @@
-/*! \file old_latency.c
-    \brief A Documented file.
-
-    Details.
-*/
+/** @file old_latency.c
+ *  @brief Direct implementation without `duplex_ops` interface
+ *
+ *  Start:
+ *
+ *
+ *
+ *  Stop:
+ */
 #include "duplex.h"
 
 // Form of start and stop in this program
@@ -35,7 +39,7 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     SndFatal_(err, "Failed sndx_duplex_write_initial_silence: %s");
 
     // After silence, stream is already started (start threshold is 0x7fffffff in latency, 2*period_size for duplex)
-    sndx_duplex_timer_start(&d->timer, d->play, d->capt);
+    // sndx_duplex_timer_start(&d->timer, d->play, d->capt);
 
     // Debugging
     sndx_dump_duplex(d, output);
@@ -54,6 +58,9 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
         cap_avail = d->period_size;
         snd_pcm_wait(d->capt, 1000);
 
+        // BUG: How do you know avail >= cap_avail?
+        // BUG: Error handling for wait (@see pcm.c)
+
         r = sndx_duplex_readbuf(d, capt_buf, cap_avail, 0, &frames_in, &in_max);
         SndReturn_(r, "Failed readbuf: %s");
 
@@ -65,7 +72,7 @@ int sndx_duplex_start(sndx_duplex_t* d, char** play_bufp, char** capt_bufp, ufra
     }
 
     // Report final timings
-    sndx_duplex_timer_stop(&d->timer, frames_in, d->rate, d->out);
+    // sndx_duplex_timer_stop(&d->timer, frames_in, d->rate, d->out);
 
     return 0;
 }

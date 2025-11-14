@@ -1,8 +1,8 @@
-/*! \file latency.c
-    \brief A Documented file.
-
-    Details.
-*/
+/** @file latency.c
+ *  @brief Implementation of `latency.c` with sndx_duplex
+ *
+ *  Seems like simplest possible implementation.
+ */
 #include "latency.h"
 
 int app_open(sndx_duplex_t* d,
@@ -92,7 +92,9 @@ int app_restart(sndx_duplex_t*, void*) { return 0; }
 
 int app_wait(sndx_duplex_t* d, void*)
 {
-    snd_pcm_wait(d->capt, d->pfds.poll_timeout);
+    // TODO: poll_timeout
+    // snd_pcm_wait(d->capt, d->pfds.poll_timeout);
+    snd_pcm_wait(d->capt, 1000);
     return 0;
 }
 

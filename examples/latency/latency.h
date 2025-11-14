@@ -1,11 +1,15 @@
-/*! \file latency.h
-    \brief A Documented file.
-
-    Details.
-*/
+/** @file latency.h
+ *  @brief API of `latency.c` with sndx_duplex
+ *
+ *  Mapping `latency.c` program to duplex interface.
+ *
+ *  Uses `snd_pcm_wait`.
+ */
 #pragma once
 
 #include "duplex.h"
+#include "interface.h"
+#include "params.h"
 
 typedef struct
 {

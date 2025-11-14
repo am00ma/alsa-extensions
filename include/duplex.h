@@ -30,24 +30,25 @@
  *      6. wait
  *      7. read
  *      8. write
+ *      9. xrun
  */
 typedef struct sndx_duplex_t
 {
-    snd_pcm_t* play;
-    snd_pcm_t* capt;
+    snd_pcm_t* play; ///< Playback pcm handle
+    snd_pcm_t* capt; ///< Capture pcm handle
 
-    format_t format;
-    u32      rate;
-    u32      period_size;
-    u32      periods;
-    u32      ch_play;
-    u32      ch_capt;
-    bool     linked;
+    u32      ch_play;     ///< Set to min channels for playback pcm
+    u32      ch_capt;     ///< Set to min channels for capture pcm
+    format_t format;      ///< Currently assuming same
+    u32      rate;        ///< Aslo must match
+    u32      period_size; ///< Must match
+    u32      periods;     ///< Must match, buffer_size = period_size * periods
+    bool     linked;      ///< May not be possible based on play, capt
 
-    sndx_buffer_t* buf_play;
-    sndx_buffer_t* buf_capt;
+    sndx_buffer_t* buf_play; ///< Connects float buffer to playback device area, used by write
+    sndx_buffer_t* buf_capt; ///< Connects float buffer to capture device area, used by read
 
-    output_t* out;
+    output_t* out; ///< Alsa's builtin message buffer
 
 } sndx_duplex_t;
 
@@ -76,8 +77,8 @@ int sndx_duplex_open(                //
     const char*     capture_device,  //
     format_t        format,          //
     u32             rate,            //
-    uframes_t       buffer_size,     //
     uframes_t       period_size,     //
+    u32             periods,         //
     access_t        _access,         //
     snd_output_t*   output);
 
@@ -135,9 +136,10 @@ int sndx_duplex_write_initial_silence( //
  *  @brief Helper to copy first channel of capture to all channels of playback (for mono -> stereo)
  *
  * Most cheap USB audio dongles have 2 playback and 1 capture channel.
+ * Here we use float* gain as data
  */
 void sndx_duplex_copy_capt_to_play( //
     sndx_buffer_t* buf_capt,
     sndx_buffer_t* buf_play,
     sframes_t      len,
-    void*          data);
+    float*         gain);

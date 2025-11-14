@@ -1,4 +1,5 @@
 #include "params.h"
+#include "types.h"
 
 void sndx_dump_params(sndx_params_t* params, output_t* output)
 {
@@ -7,8 +8,9 @@ void sndx_dump_params(sndx_params_t* params, output_t* output)
     a_info("  access      = %s", snd_pcm_access_name(params->access));
     a_info("  rate        = %d", params->rate);
     a_info("  period_size = %lu", params->period_size);
-    a_info("  buffer_size = %lu", params->buffer_size);
-    a_info("  nperiods    = %d", params->nperiods);
+    a_info("  periods     = %d", params->periods);
+    a_info("  buffer_size = %lu (params->period_size * params->periods)", params->period_size * params->periods);
+    a_info("  latency     ="); // TODO: Check computations in jack, juce, rtaudio
 }
 
 int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size)
@@ -23,16 +25,16 @@ int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size)
     return 0;
 }
 
-int sndx_set_hw_params(       //
-    snd_pcm_t*   pcm,         //
-    hw_params_t* hw_params,   //
-    u32          rate,        //
-    u32*         channels,    //
-    format_t     format,      //
-    uframes_t    buffer_size, //
-    uframes_t    period_size, //
-    access_t     access,      //
-    bool         strict_channels,
+int sndx_set_hw_params(           //
+    snd_pcm_t*   pcm,             //
+    hw_params_t* hw_params,       //
+    u32          rate,            //
+    u32*         channels,        //
+    format_t     format,          //
+    uframes_t    period_size,     //
+    u32          periods,         //
+    access_t     access,          //
+    bool         strict_channels, //
     output_t*    output)
 {
     int err;
@@ -75,11 +77,18 @@ int sndx_set_hw_params(       //
     err = snd_pcm_hw_params_set_rate(pcm, hw_params, rate, 0);
     SndReturn_(err, "Failed: snd_pcm_hw_params_set_rate: %s");
 
-    err = snd_pcm_hw_params_set_buffer_size(pcm, hw_params, buffer_size);
+    err = snd_pcm_hw_params_set_buffer_size(pcm, hw_params, period_size * periods);
     SndReturn_(err, "Failed: snd_pcm_hw_params_set_buffer_size: %s");
 
     err = snd_pcm_hw_params_set_period_size(pcm, hw_params, period_size, 0);
     SndReturn_(err, "Failed: snd_pcm_hw_params_set_period_size: %s");
+
+    u32 xperiods;
+    err = snd_pcm_hw_params_get_periods(hw_params, &xperiods, 0);
+    SndReturn_(err, "Failed: snd_pcm_hw_params_get_periods: %s");
+
+    err = xperiods != periods;
+    Return_(-err, "Failed: xperiods != periods: %d != %d", xperiods, periods);
 
     err = snd_pcm_hw_params(pcm, hw_params);
     SndReturn_(err, "Failed: snd_pcm_hw_params: %s");
@@ -90,8 +99,8 @@ int sndx_set_hw_params(       //
 int sndx_set_sw_params(       //
     snd_pcm_t*   pcm,         //
     sw_params_t* sw_params,   //
-    uframes_t    buffer_size, //
     uframes_t    period_size, //
+    u32          periods,     //
     output_t*    output)
 {
     int err;
@@ -99,10 +108,10 @@ int sndx_set_sw_params(       //
     err = snd_pcm_sw_params_current(pcm, sw_params);
     SndReturn_(err, "Failed: snd_pcm_sw_params_current: %s");
 
-    err = snd_pcm_sw_params_set_start_threshold(pcm, sw_params, (buffer_size / period_size) * period_size);
+    err = snd_pcm_sw_params_set_start_threshold(pcm, sw_params, period_size * periods);
     SndReturn_(err, "Failed: snd_pcm_sw_params_set_start_threshold: %s");
 
-    err = snd_pcm_sw_params_set_stop_threshold(pcm, sw_params, buffer_size);
+    err = snd_pcm_sw_params_set_stop_threshold(pcm, sw_params, period_size * periods);
     SndReturn_(err, "Failed: snd_pcm_sw_params_set_stop_threshold: %s");
 
     err = snd_pcm_sw_params_set_avail_min(pcm, sw_params, period_size);
@@ -125,8 +134,8 @@ int sndx_set_params(            //
     u32*       channels,        //
     format_t*  format,          //
     u32*       rate,            //
-    uframes_t* buffer_size,     //
     uframes_t* period_size,     //
+    u32*       periods,         //
     access_t   _access,         //
     bool       strict_channels, //
     output_t*  output)
@@ -143,15 +152,21 @@ int sndx_set_params(            //
     assert(*rate >= 5000 && *rate <= 786000);
     assert(*channels >= 1 && *channels <= 512);
 
-    err = sndx_set_hw_params(pcm, hw_params, *rate, channels, *format, *buffer_size, *period_size, _access,
-                             strict_channels, output);
+    err = sndx_set_hw_params( //
+        pcm, hw_params,       //
+        *rate, channels, *format, *period_size, *periods, _access, strict_channels, output);
     SndReturn_(err, "Failed: set_hw_params: %s");
 
-    err = sndx_set_sw_params(pcm, sw_params, *buffer_size, *period_size, output);
+    err = sndx_set_sw_params(pcm, sw_params, *period_size, *periods, output);
     SndReturn_(err, "Failed: set_sw_params: %s");
 
-    err = snd_spcm_init_get_params(pcm, rate, buffer_size, period_size);
+    uframes_t buffer_size;
+    err = snd_spcm_init_get_params(pcm, rate, &buffer_size, period_size);
     SndReturn_(err, "Failed: snd_spcm_init_get_params: %s");
+
+    err = buffer_size != (*period_size) * (*periods);
+    Return_(-err, "Failed: buffer_size != period_size * periods: %ld != %ld * %d", //
+            buffer_size, *period_size, *periods);
 
     return 0;
 }

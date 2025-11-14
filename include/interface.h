@@ -31,6 +31,13 @@ typedef int (*sndx_duplex_open_fn)( //
 /** @brief Free memory and close pcm handles
  *
  *  Guaranteed to succeed, checks for nil before freeing, sets nil after freeing
+ *
+ *  Steps:
+ *      1. drop capture
+ *      2. drain play
+ *      3. set nonblock for play
+ *      4. unlink capture
+ *      5. hw_free for play and capture
  */
 typedef int (*sndx_duplex_close_fn)(sndx_duplex_t* d, void* data);
 

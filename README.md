@@ -173,6 +173,44 @@ Relevant snd function: `snd_pcm_delay`
 | 10  | juce            |            |          |
 | 11  | rtaudio         |            |          |
 
+### Start
+
+- prepare
+- write silence
+
+| no  | program         | resampling | comments |
+| --- | --------------- | ---------- | -------- |
+| 1   | pcm_min         |            |          |
+| 2   | pcm             |            |          |
+| 3   | pcm-multithread |            |          |
+| 4   | audio_time      |            |          |
+| 5   | latency         |            |          |
+| 6   | aplay           |            |          |
+| 7   | axfer           |            |          |
+| 8   | aloop           |            |          |
+| 9   | jack            |            |          |
+| 10  | juce            |            |          |
+| 11  | rtaudio         |            |          |
+
+### Stop
+
+- drain
+- drop
+
+| no  | program         | resampling | comments |
+| --- | --------------- | ---------- | -------- |
+| 1   | pcm_min         |            |          |
+| 2   | pcm             |            |          |
+| 3   | pcm-multithread |            |          |
+| 4   | audio_time      |            |          |
+| 5   | latency         |            |          |
+| 6   | aplay           |            |          |
+| 7   | axfer           |            |          |
+| 8   | aloop           |            |          |
+| 9   | jack            |            |          |
+| 10  | juce            |            |          |
+| 11  | rtaudio         |            |          |
+
 ## Wait, Xrun
 
 ### Wait op

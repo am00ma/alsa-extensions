@@ -15,9 +15,8 @@ int main()
         .format      = SND_PCM_FORMAT_S16,
         .access      = SND_PCM_ACCESS_MMAP_INTERLEAVED,
         .rate        = 48000,
-        .nperiods    = 2,
+        .periods     = 2,
         .period_size = 128,
-        .buffer_size = 256,
     };
 
     sndx_dump_params(&p, output);

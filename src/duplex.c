@@ -1,14 +1,14 @@
 #include "duplex.h"
 #include "params.h"
+#include "types.h"
 
 static sndx_params_t default_params = {
     .channels    = 2,
     .format      = SND_PCM_FORMAT_S16,
     .access      = SND_PCM_ACCESS_MMAP_INTERLEAVED,
     .rate        = 48000,
-    .nperiods    = 2,
+    .periods     = 2,
     .period_size = 128,
-    .buffer_size = 256,
 };
 
 void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
@@ -60,8 +60,8 @@ int sndx_duplex_open(                //
     const char*     capture_device,  //
     format_t        format,          //
     u32             rate,            //
-    uframes_t       buffer_size,     //
     uframes_t       period_size,     //
+    u32             periods,         //
     access_t        _access,         //
     output_t*       output)
 {
@@ -85,24 +85,23 @@ int sndx_duplex_open(                //
     play_params.format = capt_params.format = format;
     play_params.access = capt_params.access = _access;
     play_params.rate = capt_params.rate = rate;
-    play_params.buffer_size = capt_params.buffer_size = buffer_size;
     play_params.period_size = capt_params.period_size = period_size;
-    play_params.nperiods = capt_params.nperiods = buffer_size / period_size;
+    play_params.periods = capt_params.periods = periods;
 
     err = sndx_set_params(        //
         d->play,                  //
         &play_params.channels,    //
         &play_params.format,      //
         &play_params.rate,        //
-        &play_params.buffer_size, //
         &play_params.period_size, //
+        &play_params.periods,     //
         play_params.access,       //
         false,                    //
         d->out);                  //
     SndGoto_(err, __close, "Failed: sndx_set_params: %s");
 
-    err = !((rate == play_params.rate) &&               //
-            (buffer_size == play_params.buffer_size) && //
+    err = !((rate == play_params.rate) &&       //
+            (periods == play_params.periods) && //
             (period_size == play_params.period_size));
     Goto_(err, __close, "Failed: params check");
 
@@ -114,15 +113,15 @@ int sndx_duplex_open(                //
         &capt_params.channels,    //
         &capt_params.format,      //
         &capt_params.rate,        //
-        &capt_params.buffer_size, //
         &capt_params.period_size, //
+        &capt_params.periods,     //
         capt_params.access,       //
         false,                    //
         d->out);                  //
     SndGoto_(err, __close, "Failed: sndx_set_params: %s");
 
-    err = !((rate == capt_params.rate) &&               //
-            (buffer_size == capt_params.buffer_size) && //
+    err = !((rate == capt_params.rate) &&       //
+            (periods == capt_params.periods) && //
             (period_size == capt_params.period_size));
     Return_(err, "Could not set params");
 
@@ -135,7 +134,7 @@ int sndx_duplex_open(                //
     d->format      = play_params.format;
     d->rate        = rate;
     d->period_size = period_size;
-    d->periods     = buffer_size / period_size;
+    d->periods     = periods;
 
     d->ch_play = play_params.channels;
     d->ch_capt = capt_params.channels;
@@ -146,23 +145,13 @@ int sndx_duplex_open(                //
     d->linked = true;
 
     // Allocate buffers
+    uframes_t buffer_size = period_size * periods;
+
     err = sndx_buffer_open(&d->buf_play, d->format, d->ch_play, buffer_size, output);
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
     err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
-
-    // // Allocate poll fds
-    // d->pfds.play_nfds     = snd_pcm_poll_descriptors_count(d->play);
-    // d->pfds.capt_nfds     = snd_pcm_poll_descriptors_count(d->capt);
-    // d->pfds.nfds          = d->pfds.play_nfds + d->pfds.capt_nfds;
-    // d->pfds.addr          = calloc(d->pfds.nfds, sizeof(pfd_t));
-    // d->pfds.poll_timeout  = 1000;
-    // d->pfds.poll_next     = 0;
-    // d->pfds.poll_late     = 0;
-    // d->pfds.period_usecs  = (u64)floor((((float)d->period_size) / d->rate) * 1000000.0f);
-    // d->pfds.xrun_count    = 0;
-    // d->pfds.process_count = 0;
 
     *duplexp = d;
 
@@ -198,19 +187,16 @@ int sndx_duplex_close(sndx_duplex_t* d)
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
-    // if (d->pfds.addr)
-    // {
-    //     free(d->pfds.addr);
-    //     d->pfds.addr = nullptr;
-    // }
-
     free(d);
     d = nullptr;
 
     return 0;
 }
 
-int sndx_duplex_write_initial_silence(sndx_duplex_t* d, char* play_buf, uframes_t* frames_silence)
+int sndx_duplex_write_initial_silence( //
+    sndx_duplex_t* d,
+    char*          play_buf,
+    uframes_t*     frames_silence)
 {
     int err;
 
@@ -231,7 +217,13 @@ __error:
     return err;
 }
 
-sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t offset, uframes_t* frames, uframes_t* max)
+sframes_t sndx_duplex_readbuf( //
+    sndx_duplex_t* d,
+    char*          buf,
+    i64            len,
+    uframes_t      offset,
+    uframes_t*     frames,
+    uframes_t*     max)
 {
     i64 r;
     do { r = snd_pcm_mmap_readi(d->capt, buf, len); } while (r == -EAGAIN);
@@ -251,8 +243,13 @@ sframes_t sndx_duplex_readbuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t of
     return r;
 }
 
-sframes_t
-sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t offset, uframes_t* frames, uframes_t* max)
+sframes_t sndx_duplex_writebuf( //
+    sndx_duplex_t* d,
+    char*          buf,
+    i64            len,
+    uframes_t      offset,
+    uframes_t*     frames,
+    uframes_t*     max)
 {
     snd_output_t* output = d->out;
 
@@ -277,10 +274,12 @@ sndx_duplex_writebuf(sndx_duplex_t* d, char* buf, i64 len, uframes_t offset, ufr
     return 0;
 }
 
-void sndx_duplex_copy_capt_to_play(sndx_buffer_t* buf_capt, sndx_buffer_t* buf_play, sframes_t len, void* data)
+void sndx_duplex_copy_capt_to_play( //
+    sndx_buffer_t* buf_capt,
+    sndx_buffer_t* buf_play,
+    sframes_t      len,
+    float*         gain)
 {
-    float* gain = data;
-
     // Actual realtime check - can just return, but better to flag
     AssertMsg(len >= 0, "Received negative len: %ld", len);
 

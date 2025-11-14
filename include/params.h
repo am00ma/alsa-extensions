@@ -27,9 +27,8 @@ typedef struct
     format_t  format;
     access_t  access;
     u32       rate;
-    u32       nperiods;
+    u32       periods;
     uframes_t period_size;
-    uframes_t buffer_size;
 
 } sndx_params_t;
 
@@ -41,8 +40,9 @@ int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);
 
 /** @brief Set config for hardware params.
  *
- *  @param strict_channels Whether to honor requested channels, or make best effort
- *  @param buffer_size     Equals (period_size * nperiods)
+ *  Param `channels` is the only one passed by ref, as that is set by this func.
+ *  If strict_channels, it can be used to set expectations.
+ *
  */
 int sndx_set_hw_params(           //
     snd_pcm_t*   pcm,             //
@@ -50,28 +50,32 @@ int sndx_set_hw_params(           //
     u32          rate,            //
     u32*         channels,        //
     format_t     format,          //
-    uframes_t    buffer_size,     //
     uframes_t    period_size,     //
+    u32          periods,         //
     access_t     access,          //
     bool         strict_channels, //
     output_t*    output);
 
-/** @brief Set config for software params. Main things to note are min_avail, start_threshold, stop_threshold. */
+/** @brief Set config for software params. Main things to note are min_avail, start_threshold, stop_threshold */
 int sndx_set_sw_params(       //
     snd_pcm_t*   pcm,         //
     sw_params_t* sw_params,   //
-    uframes_t    buffer_size, //
     uframes_t    period_size, //
+    u32          periods,     //
     output_t*    output);
 
-/** @brief Set config for both hardware and software params. */
+/** @brief Set config for both hardware and software params
+ *
+ * All params are set and reflected as they are passed by reference
+ *
+ * */
 int sndx_set_params(            //
     snd_pcm_t* pcm,             //
     u32*       channels,        //
     format_t*  format,          //
     u32*       rate,            //
-    uframes_t* buffer_size,     //
     uframes_t* period_size,     //
+    u32*       periods,         //
     access_t   _access,         //
     bool       strict_channels, //
     output_t*  output);
