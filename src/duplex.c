@@ -141,7 +141,7 @@ int sndx_duplex_open(                //
     d->ch_play = play_params.channels;
     d->ch_capt = capt_params.channels;
 
-    err = snd_pcm_link(d->capt, d->play);
+    err = snd_pcm_link(d->play, d->capt);
     SndGoto_(err, __close, "Failed: snd_pcm_link: %s");
 
     d->linked = true;
@@ -275,6 +275,46 @@ int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
 __error:
     sndx_dump_duplex_status(d, d->out);
     return err;
+}
+
+int sndx_duplex_start(sndx_duplex_t* d)
+{
+    int       err;
+    output_t* output = d->out;
+
+    err = sndx_duplex_write_initial_silence(d);
+    SndCheck_(err, "Failed sndx_duplex_write_initial_silence: %s");
+
+    err = snd_pcm_start(d->play);
+    SndCheck_(err, "Failed snd_pcm_start play: %s");
+
+    if (!d->linked)
+    {
+        err = snd_pcm_start(d->capt);
+        SndCheck_(err, "Failed snd_pcm_start capt: %s");
+    }
+
+    // RUNNING
+    sndx_dump_duplex_status(d, output);
+
+    return 0;
+}
+
+int sndx_duplex_stop(sndx_duplex_t* d)
+{
+    int       err;
+    output_t* output = d->out;
+
+    err = snd_pcm_drop(d->play);
+    SndCheck_(err, "Failed snd_pcm_drop play: %s");
+
+    if (!d->linked)
+    {
+        err = snd_pcm_drop(d->capt);
+        SndCheck_(err, "Failed snd_pcm_drop capt: %s");
+    }
+
+    return 0;
 }
 
 sframes_t sndx_duplex_read( //

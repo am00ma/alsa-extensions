@@ -5,6 +5,7 @@
  */
 #include "duplex.h"
 #include "timer.h"
+#include <alsa/asoundlib.h>
 
 // Application
 int main()
@@ -25,24 +26,18 @@ int main()
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
 
+    // PREPARED -> RUNNING
+    err = sndx_duplex_start(d);
+    SndGoto_(err, __close, "Failed: sndx_duplex_start: %s");
+
     sndx_timer_t timer = {};
-
-    err = sndx_duplex_write_initial_silence(d);
-    SndCheck_(err, "Failed sndx_duplex_write_initial_silence: %s");
-
-    err = snd_pcm_start(d->play);
-    SndCheck_(err, "Failed snd_pcm_start: %s");
-
-    // RUNNING
-    sndx_dump_duplex_status(d, output);
-
     sndx_timer_start(&timer, d->rate, d->play, d->capt);
 
     while (timer.frames_capt < d->rate * 10)
     {
         i64 r;
 
-        // Wait
+        // Wait -> no error checking, still works somehow
         snd_pcm_wait(d->capt, 1000);
 
         // NOTE: We are copying twice by not using mmap_begin, mmap_commit
@@ -89,8 +84,10 @@ int main()
 __close:
 
     sndx_timer_stop(&timer, d->play, d->capt);
-
     sndx_dump_timer(&timer, d->out);
+
+    err = sndx_duplex_stop(d);
+    SndFatal_(err, "Failed sndx_duplex_stop: %s");
 
     err = sndx_duplex_close(d);
     SndFatal(err, "Failed sndx_duplex_close: %s");
