@@ -126,7 +126,7 @@ void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames
         char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
         int    step = snd_pcm_channel_area_step(a_dev);
 
-        sample_move_d16_sS(dev, buf, step, sizeof(float), frames);
+        sample_move_d32_sS(dev, buf, step, sizeof(float), frames);
     }
 }
 
@@ -141,6 +141,6 @@ void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames
         float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
         int    step = snd_pcm_channel_area_step(a_dev);
 
-        sample_move_dS_s16(buf, dev, sizeof(float), step, frames);
+        sample_move_dS_s32(buf, dev, sizeof(float), step, frames);
     }
 }

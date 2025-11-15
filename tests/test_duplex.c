@@ -13,6 +13,9 @@
  *      5. in pcm, there is only playback, so not difficult
  *      6. in others, they directly readi and writei
  *
+ *  Probable error:
+ *      Need to capture both playback and capture avail before using mmap
+ *
  */
 #include "duplex.h"
 #include "timer.h"
@@ -28,7 +31,7 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:FC1,0", "hw:FC1,0",          //
+        "hw:0,0", "hw:0,0",              //
         SND_PCM_FORMAT_S16_LE,           //
         48000, 128, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //

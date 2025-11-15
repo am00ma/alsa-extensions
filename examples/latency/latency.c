@@ -5,7 +5,6 @@
  */
 #include "duplex.h"
 #include "timer.h"
-#include "types.h"
 
 // Application
 int main()
@@ -19,9 +18,9 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:FC1,0", "hw:FC1,0",          //
-        SND_PCM_FORMAT_S16_LE,           //
-        48000, 128, 2,                   //
+        "hw:A96,0", "hw:A96,0",          //
+        SND_PCM_FORMAT_S32_LE,           //
+        48000, 256, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
@@ -46,7 +45,9 @@ int main()
         // Wait
         snd_pcm_wait(d->capt, 1000);
 
-        // Read
+        // NOTE: We are copying twice by not using mmap_begin, mmap_commit
+
+        // Read - prob period_size as that is guaranteed in avail_min?
         uframes_t len = d->period_size;
         do { r = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len); } while (r == -EAGAIN);
         if (r > 0) { timer.frames_capt += r; }
@@ -62,8 +63,7 @@ int main()
             pos_play = i + chn * d->buf_play->frames;
             pos_capt = i;
 
-            d->buf_play->bufdata[pos_play] = d->buf_capt->bufdata[pos_capt] * 10.0;
-            // d->buf_play->bufdata[pos_play] = 0.0;
+            d->buf_play->bufdata[pos_play] = d->buf_capt->bufdata[pos_capt];
         }
 
         // To write buffer -> writes to devdata
