@@ -14,11 +14,11 @@ void sndx_duplex_copy_capt_to_play( //
     if (buf_capt->channels == 1)
     {
         RANGE(chn, buf_play->channels)
-        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i] * (*gain); }
+        RANGE(i, len) { buf_play->bufdata[i + (buf_size * chn)] = buf_capt->bufdata[i] * (*gain); }
     }
     else if (buf_capt->channels == buf_play->channels)
     {
         RANGE(chn, buf_play->channels)
-        RANGE(i, len) { buf_play->data[i + (buf_size * chn)] = buf_capt->data[i + (buf_size * chn)] * (*gain); }
+        RANGE(i, len) { buf_play->bufdata[i + (buf_size * chn)] = buf_capt->bufdata[i + (buf_size * chn)] * (*gain); }
     }
 }

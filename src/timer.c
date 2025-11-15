@@ -1,5 +1,4 @@
 #include "timer.h"
-#include "types.h"
 
 u64 timespec_diff_now(tspec_t* tspec)
 {
@@ -10,7 +9,8 @@ u64 timespec_diff_now(tspec_t* tspec)
         diff.tv_sec  = now.tv_sec - tspec->tv_sec - 1;
         diff.tv_nsec = (now.tv_nsec + 1000000000L) - tspec->tv_nsec;
     }
-    else {
+    else
+    {
         diff.tv_sec  = now.tv_sec - tspec->tv_sec;
         diff.tv_nsec = now.tv_nsec - tspec->tv_nsec;
     }
@@ -27,7 +27,8 @@ u64 timespec_diff(tspec_t* start, tspec_t* end)
         diff.tv_sec  = end->tv_sec - start->tv_sec - 1;
         diff.tv_nsec = (end->tv_nsec + 1000000000L) - start->tv_nsec;
     }
-    else {
+    else
+    {
         diff.tv_sec  = end->tv_sec - start->tv_sec;
         diff.tv_nsec = end->tv_nsec - start->tv_nsec;
     }

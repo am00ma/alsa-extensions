@@ -1,5 +1,4 @@
 #include "params.h"
-#include "types.h"
 
 void sndx_dump_params(sndx_params_t* params, output_t* output)
 {
@@ -69,7 +68,8 @@ int sndx_set_hw_params(           //
 
             *channels = rchannels;
         }
-        else {
+        else
+        {
             return err;
         }
     }

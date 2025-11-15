@@ -3,18 +3,19 @@
  *
  *  Almost same as latency for wait-read-write loop
  *
- *  NOTE: Could not get original to work, i.e. as passthrough with hw:A96,0
- *        On futher inspection, it reads to `buffer_c` and writes to `buffer_p`,
- *        so there is no passthrough at all
+ *  NOTE: It reads to `buffer_c` and writes to `buffer_p`,
+ *        so there is no output from the speakers
  *
  *  1. No checking xruns, directly exits, still works, never got an xrun
  *  2. This time error checking `snd_pcm_wait`, `readi`, `writei`, but straight fatal
  *  3. Direct readi, writei
- *  4. Use of mmap is useless however `write_initial_silence` uses mmap
+ *  4. Use of mmap is useless however `write_initial_silence` uses mmap like in latency
  *
  *  Adds use of `htstamp` apart from just `tstamp` using:
  *      - `snd_pcm_audio_tstamp_config_t`
  *      - `snd_pcm_audio_tstamp_report_t`
+ *
+ *  TODO:
  *
  *  1. Set requested config:
  *    audio_tstamp_config_p.type_requested = type;
