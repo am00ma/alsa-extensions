@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 
 # =========================================================================
 #                       Project
@@ -76,7 +76,7 @@ set(LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/timer.c
     ${CMAKE_SOURCE_DIR}/src/duplex.c)
 set(LIB_INCLUDES ${CMAKE_SOURCE_DIR}/include)
-set(LIB_LIBS     m asound sndfile resample)
+set(LIB_LIBS     m asound sndfile)
 set(LIB_C_FLAGS
     PRIVATE
     -O0

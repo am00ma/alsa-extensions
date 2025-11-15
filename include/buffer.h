@@ -36,8 +36,8 @@ typedef struct
     area_t* dev; ///< Interleaved, backed by `float* devdata` which is mmapped to device
     area_t* buf; ///< Non-interleaved, backed by `float* bufdata`
 
-    char*  devdata; ///< Backing for dev [frames * channels]
-    float* bufdata; ///< Backing for buf [frames * channels]
+    char*  devdata; ///< Backing for dev (len = frames * channels * bytes)
+    float* bufdata; ///< Backing for buf (len = frames * channels)
 
 } sndx_buffer_t;
 
