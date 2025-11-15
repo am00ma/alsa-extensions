@@ -1,12 +1,42 @@
-/** @file latency.c
- *  @brief Implementation of `latency.c` with sndx_duplex
+/** @file audio_time.c
+ *  @brief Implementation of `audio_time.c` with sndx_duplex
  *
- *  Seems like simplest possible implementation.
+ *  Almost same as latency for wait-read-write loop
+ *
+ *  NOTE: Could not get original to work, i.e. as passthrough with hw:A96,0
+ *        On futher inspection, it reads to `buffer_c` and writes to `buffer_p`,
+ *        so there is no passthrough at all
  *
  *  1. No checking xruns, directly exits, still works, never got an xrun
- *  2. Not even error checking `snd_pcm_wait`
+ *  2. This time error checking `snd_pcm_wait`, `readi`, `writei`, but straight fatal
  *  3. Direct readi, writei
  *  4. Use of mmap is useless however `write_initial_silence` uses mmap
+ *
+ *  Adds use of `htstamp` apart from just `tstamp` using:
+ *      - `snd_pcm_audio_tstamp_config_t`
+ *      - `snd_pcm_audio_tstamp_report_t`
+ *
+ *  1. Set requested config:
+ *    audio_tstamp_config_p.type_requested = type;
+ *    audio_tstamp_config_p.report_delay   = do_delay;
+ *
+ *  2. Get timestamp
+ *      ```c
+ *      _gettimestamp(snd_pcm_t    *handle,
+ *                    htimestamp_t *timestamp,              // tstamp_c
+ *                    htimestamp_t *trigger_timestamp,      // trigger_tstamp_c
+ *                    htimestamp_t *audio_timestamp,        // audio_tstamp_c
+ *                    config_t     *audio_tstamp_config,    // config_c
+ *                    report_t     *audio_tstamp_report,    // report_c
+ *                    uframes_t    *avail,                  // avail_c = snd_pcm_status_get_avail(status)
+ *                    sframes_t    *delay)                  // delay_c = snd_pcm_status_get_delay(status)
+ *      ```
+ *
+ *  3. Report (every cycle):
+ *      - systime   : timediff(tstamp_p, trigger_tstamp_p)
+ *      - audio time: timestamp2ns(audio_tstamp_p)
+ *      - delta     : systime - audio time
+ *      - resolution: audio_tstamp_report_p.accuracy
  *
  */
 #include "duplex.h"
@@ -39,7 +69,8 @@ int main()
         i64 r;
 
         // Wait -> no error checking, still works somehow
-        snd_pcm_wait(d->capt, 1000);
+        err = snd_pcm_wait(d->capt, 1000);
+        SndGoto_(err, __close, "Failed: snd_pcm_wait: %s");
 
         // NOTE: We are copying twice by not using mmap_begin, mmap_commit
         //       thus rendering the mmap quite useless
@@ -47,6 +78,7 @@ int main()
         // Read - prob period_size as that is guaranteed in avail_min?
         uframes_t len = d->period_size;
         do { r = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len); } while (r == -EAGAIN);
+        SndGoto_(r, __close, "Failed: snd_pcm_mmap_readi: %s");
         if (r > 0) { d->timer->frames_capt += r; }
 
         // To soft buffer -> reads from devdata

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "buffer.h"
+#include "timer.h"
 
 /** @brief Analogue of `snd_pcm_t` that manages pcm handles, buffers, polling, timing.
  *
@@ -47,6 +48,8 @@ typedef struct sndx_duplex_t
 
     sndx_buffer_t* buf_play; ///< Connects float buffer to playback device area, used by write
     sndx_buffer_t* buf_capt; ///< Connects float buffer to capture device area, used by read
+
+    sndx_timer_t* timer; ///< Measure and report latency
 
     output_t* out; ///< Alsa's builtin message buffer
 

@@ -1,8 +1,5 @@
 #include "duplex.h"
-#include "buffer.h"
 #include "params.h"
-#include "types.h"
-#include <alsa/asoundlib.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -155,6 +152,9 @@ int sndx_duplex_open(                //
     err = sndx_buffer_open(&d->buf_capt, d->format, d->ch_capt, buffer_size, output);
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
+    d->timer = calloc(1, sizeof(sndx_timer_t));
+    Goto_(-(!d->timer), __close, "Failed: calloc(timer)"); // can only fail cause of memory
+
     *duplexp = d;
 
     return 0;
@@ -188,6 +188,12 @@ int sndx_duplex_close(sndx_duplex_t* d)
 
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
+
+    if (d->timer)
+    {
+        free(d->timer);
+        d->timer = nullptr;
+    }
 
     free(d);
     d = nullptr;
@@ -297,6 +303,9 @@ int sndx_duplex_start(sndx_duplex_t* d)
     // RUNNING
     sndx_dump_duplex_status(d, output);
 
+    // Start the timer (TODO: provide option to check if in xrun)
+    sndx_timer_start(d->timer, d->rate, d->play, d->capt);
+
     return 0;
 }
 
@@ -313,6 +322,10 @@ int sndx_duplex_stop(sndx_duplex_t* d)
         err = snd_pcm_drop(d->capt);
         SndCheck_(err, "Failed snd_pcm_drop capt: %s");
     }
+
+    // Stop the timer (TODO: provide option to check if in xrun)
+    sndx_timer_stop(d->timer, d->play, d->capt);
+    sndx_dump_timer(d->timer, d->out);
 
     return 0;
 }
