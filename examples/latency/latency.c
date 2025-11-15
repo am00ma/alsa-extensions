@@ -41,6 +41,7 @@ int main()
         snd_pcm_wait(d->capt, 1000);
 
         // NOTE: We are copying twice by not using mmap_begin, mmap_commit
+        //       thus rendering the mmap quite useless
 
         // Read - prob period_size as that is guaranteed in avail_min?
         uframes_t len = d->period_size;
