@@ -6,6 +6,18 @@
 
 #define DEBUG
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define SND_LITTLE_ENDIAN
+#define SNDRV_LITTLE_ENDIAN
+#define SNDRV_LITTLE_ENDIAN_BITFIELD
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#define SND_BIG_ENDIAN
+#define SNDRV_BIG_ENDIAN
+#define SNDRV_BIG_ENDIAN_BITFIELD
+#else
+#error "Unsupported endian..."
+#endif
+
 /* ---------------------------------------------------------------------------
  * Common includes
  * ------------------------------------------------------------------------- */
@@ -23,6 +35,8 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef int32_t  i32;
 typedef int64_t  i64;
+typedef float    f32;
+typedef double   f64;
 
 // typedef struct int24_t
 // {

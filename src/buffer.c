@@ -1,5 +1,5 @@
 #include "buffer.h"
-#include "memops.h"
+#include "pcm_lfloat.h"
 
 void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
 {
@@ -117,30 +117,24 @@ void sndx_buffer_close(sndx_buffer_t* b)
 
 void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
 {
-    RANGE(chn, b->channels)
-    {
-        const area_t* a_dev = &b->dev[chn];
-        const area_t* a_buf = &b->buf[chn];
+    int int32_idx   = snd_pcm_linear_put_index(SND_PCM_FORMAT_S32, b->format);
+    int float32_idx = snd_pcm_lfloat_get_s32_index(SND_PCM_FORMAT_FLOAT);
 
-        float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
-        char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
-        int    step = snd_pcm_channel_area_step(a_dev);
-
-        sample_move_d32_sS(dev, buf, step, sizeof(float), frames);
-    }
+    snd_pcm_lfloat_convert_float_integer( //
+        b->dev, offset,                   //
+        b->buf, offset,                   //
+        b->channels, frames,              //
+        int32_idx, float32_idx);
 }
 
 void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
 {
-    RANGE(chn, b->channels)
-    {
-        const area_t* a_dev = &b->dev[chn];
-        const area_t* a_buf = &b->buf[chn];
+    int int32_idx   = snd_pcm_linear_get_index(b->format, SND_PCM_FORMAT_S32);
+    int float32_idx = snd_pcm_lfloat_put_s32_index(SND_PCM_FORMAT_FLOAT);
 
-        char*  dev  = snd_pcm_channel_area_addr(a_dev, offset);
-        float* buf  = snd_pcm_channel_area_addr(a_buf, offset);
-        int    step = snd_pcm_channel_area_step(a_dev);
-
-        sample_move_dS_s32(buf, dev, sizeof(float), step, frames);
-    }
+    snd_pcm_lfloat_convert_integer_float( //
+        b->buf, offset,                   //
+        b->dev, offset,                   //
+        b->channels, frames,              //
+        int32_idx, float32_idx);
 }

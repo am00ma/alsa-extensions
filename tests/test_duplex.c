@@ -61,7 +61,7 @@ int main()
     sndx_timer_start(&timer, d->rate, d->play, d->capt);
 
     // Read write loop
-    while (timer.frames_capt < timer.rate * 10)
+    while (timer.frames_capt < timer.rate / 10)
     {
 
         const area_t* areas_capt;

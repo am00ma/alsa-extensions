@@ -69,8 +69,8 @@ doxygen_add_docs(example_docs
 #                     Common
 # =========================================================================
 set(LIB_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/memops.c
     ${CMAKE_SOURCE_DIR}/src/params.c
+    ${CMAKE_SOURCE_DIR}/src/pcm_lfloat.c
     ${CMAKE_SOURCE_DIR}/src/buffer.c
     ${CMAKE_SOURCE_DIR}/src/xrun.c
     ${CMAKE_SOURCE_DIR}/src/timer.c
@@ -83,7 +83,7 @@ set(LIB_C_FLAGS
     -g
     -Wall
     -Wextra
-    -pedantic
+    # -pedantic # plugin_ops.h
     -fdiagnostics-color=always)
 
 set(LIB_NAME alsax)

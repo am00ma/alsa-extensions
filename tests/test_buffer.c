@@ -8,9 +8,8 @@ int main()
     err = snd_output_stdio_attach(&output, stdout, 0);
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
-    const isize    num_formats = 4;
+    const isize    num_formats = 1;
     const format_t formats[]   = {
-        SND_PCM_FORMAT_FLOAT_LE,
         SND_PCM_FORMAT_S16_LE,
         SND_PCM_FORMAT_S24_3LE,
         SND_PCM_FORMAT_S32_LE,
