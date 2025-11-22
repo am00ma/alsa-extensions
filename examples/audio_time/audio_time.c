@@ -61,6 +61,8 @@ int main()
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
 
+    sndx_dump_duplex(d, d->out);
+
     // PREPARED -> RUNNING
     err = sndx_duplex_start(d);
     SndGoto_(err, __close, "Failed: sndx_duplex_start: %s");
