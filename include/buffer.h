@@ -39,6 +39,12 @@ typedef struct
     char*  devdata; ///< Backing for dev (len = frames * channels * bytes)
     float* bufdata; ///< Backing for buf (len = frames * channels)
 
+    int from_dev_int32_idx;   ///< Copy int format to int32: Conversion function index
+    int from_dev_float32_idx; ///< Copy int32 to float32: Conversion function index
+
+    int to_dev_float32_idx; ///< Copy float32 to int32: Conversion function index
+    int to_dev_int32_idx;   ///< Copy int32 to int format: Conversion function index
+
 } sndx_buffer_t;
 
 /** @brief Dump buffer params to output. */
