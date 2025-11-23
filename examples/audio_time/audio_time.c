@@ -55,12 +55,18 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:A96,0", "hw:A96,0",          //
-        SND_PCM_FORMAT_S32_LE,           //
+        "hw:FC1,0", "hw:FC1,0",          //
+        SND_PCM_FORMAT_S16_LE,           //
         48000, 128, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
+
+    err = snd_pcm_nonblock(d->play, 0);
+    SndFatal_(err, "Failed: snd_pcm_nonblock (play): %s");
+
+    err = snd_pcm_nonblock(d->capt, SND_PCM_NONBLOCK);
+    SndFatal_(err, "Failed: snd_pcm_nonblock (capt): %s");
 
     sndx_dump_duplex(d, d->out);
 
@@ -68,7 +74,7 @@ int main()
     sndx_hstats_t ht_play;
     sndx_hstats_t ht_capt;
 
-    bool          do_delay = false;
+    bool          do_delay = true;
     tstamp_type_t type     = SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT;
 
     err = sndx_hstats_enable(&ht_play, d->play, d->rate, type, do_delay, d->out);
@@ -125,7 +131,6 @@ int main()
         sndx_buffer_buf_to_dev(d->buf_play, 0, frames);
 
         // Write
-        len    = d->period_size;
         frames = snd_pcm_mmap_writei(d->play, d->buf_play->devdata, len);
         SndGoto_(frames, __close, "Failed: snd_pcm_mmap_writei: %s");
 

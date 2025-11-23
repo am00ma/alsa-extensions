@@ -204,6 +204,8 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
 {
     int err;
 
+    t->frames += frames_processed; /* read plus queued */
+
     snd_pcm_status_t* status;
     snd_pcm_status_alloca(&status);
     snd_pcm_status_set_audio_htstamp_config(status, &t->config);
@@ -219,27 +221,13 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
     t->avail = snd_pcm_status_get_avail(status);
     t->delay = snd_pcm_status_get_delay(status);
 
-    t->frames += frames_processed; /* read plus queued */
-
     return 0;
 }
 
 /** @brief Print report of current snapshot and print difference in sys and snd time */
 void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
 {
-    a_info("  systime      : %ld nsec    \n"
-           "  audio time   : %ld nsec %s \n"
-           "  systime delta: %ld nsec %s \n"
-           "  resolution   : %d %s       ",
-           htstamp_diff_nsecs(t->tstamp, t->trigger),                              //
-           htimestamp_nsecs(t->audio),                                             //
-           (t->report.valid == 0) ? "(invalid)" : "",                              //
-           htstamp_diff_nsecs(t->tstamp, t->trigger) - htimestamp_nsecs(t->audio), //
-           (t->report.valid == 0) ? "(invalid)" : "",                              //
-           t->report.accuracy, (t->report.accuracy_report == 0) ? "(invalid)" : "");
-
-    i64 current = t->frames + t->delay; /* read plus queued */
-
+    i64 current    = t->frames + t->delay; /* read plus queued */
     i64 curr_count = (i64)current * 1000000000LL / t->rate;
 
     a_info("  do_delay    : %d  \n"
@@ -252,4 +240,15 @@ void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
            curr_count - htimestamp_nsecs(t->audio),           //
            (curr_count - htimestamp_nsecs(t->audio)) / 1'000, //
            (curr_count - htimestamp_nsecs(t->audio)) / 1'000'000);
+
+    a_info("  systime      : %ld nsec    \n"
+           "  audio time   : %ld nsec %s \n"
+           "  systime delta: %ld nsec %s \n"
+           "  resolution   : %d %s       ",
+           htstamp_diff_nsecs(t->tstamp, t->trigger),                              //
+           htimestamp_nsecs(t->audio),                                             //
+           (t->report.valid == 0) ? "(invalid)" : "",                              //
+           htstamp_diff_nsecs(t->tstamp, t->trigger) - htimestamp_nsecs(t->audio), //
+           (t->report.valid == 0) ? "(invalid)" : "",                              //
+           t->report.accuracy, (t->report.accuracy_report == 0) ? "(invalid)" : "");
 }
