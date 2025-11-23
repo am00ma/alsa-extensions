@@ -1,6 +1,10 @@
 #include "timer.h"
+#include "types.h"
+#include <alsa/asoundlib.h>
 
-u64 timespec_diff_now(tspec_t* tspec)
+#define TSTAMP_TYPE SND_PCM_TSTAMP_TYPE_MONOTONIC_RAW
+
+i64 timespec_diff_now_usecs(tspec_t* tspec)
 {
     tspec_t now, diff;
     timestamp_now(&now);
@@ -18,7 +22,7 @@ u64 timespec_diff_now(tspec_t* tspec)
     return (diff.tv_sec * 1000000) + ((diff.tv_nsec + 500L) / 1000L);
 }
 
-u64 timespec_diff(tspec_t* start, tspec_t* end)
+i64 timespec_diff_usecs(tspec_t* start, tspec_t* end)
 {
     tspec_t diff;
     timestamp_now(end);
@@ -36,7 +40,7 @@ u64 timespec_diff(tspec_t* start, tspec_t* end)
     return (diff.tv_sec * 1000000) + ((diff.tv_nsec + 500L) / 1000L);
 }
 
-i64 timestamp_diff(tstamp_t start, tstamp_t end)
+i64 timestamp_diff_usecs(tstamp_t start, tstamp_t end)
 {
     i64 l;
     start.tv_sec -= end.tv_sec;
@@ -56,7 +60,7 @@ void timestamp_get(snd_pcm_t* handle, tstamp_t* tstamp)
     status_t* status;
     snd_pcm_status_alloca(&status);
     int err = snd_pcm_status(handle, status);
-    SndFatal(err, "Stream status error: %s\n");
+    SndFatal(err, "Stream status error: %s");
     snd_pcm_status_get_trigger_tstamp(status, tstamp);
 }
 
@@ -68,6 +72,22 @@ u64 get_microseconds()
     clock_gettime(CLOCK_MONOTONIC, &time);
     utime = (u64)time.tv_sec * 1e6 + (u64)time.tv_nsec / 1e3;
     return utime;
+}
+
+i64 htimestamp_nsecs(htstamp_t t)
+{
+    i64 nsec;
+    nsec  = t.tv_sec * 1000000000ULL;
+    nsec += t.tv_nsec;
+    return nsec;
+}
+
+i64 htstamp_diff_nsecs(htstamp_t t1, htstamp_t t2)
+{
+    i64 nsec1, nsec2;
+    nsec1 = htimestamp_nsecs(t1);
+    nsec2 = htimestamp_nsecs(t2);
+    return nsec1 - nsec2;
 }
 
 void sndx_timer_start(sndx_timer_t* t, u32 rate, snd_pcm_t* play, snd_pcm_t* capt)
@@ -89,7 +109,7 @@ void sndx_dump_timer(sndx_timer_t* t, output_t* output)
 {
     AssertMsg(t->rate, "Please set rate to measure timing differences.");
 
-    i64 diff  = timespec_diff(&t->start_sys, &t->stop_sys);
+    i64 diff  = timespec_diff_usecs(&t->start_sys, &t->stop_sys);
     i64 mtime = frames_to_micro(t->frames_capt, t->rate);
 
     a_info("Timer: sys tspec vs count");
@@ -103,5 +123,112 @@ void sndx_dump_timer(sndx_timer_t* t, output_t* output)
     a_info("  HW sync : %s", hw_sync ? "yes" : "no");
     a_info("  Playback: %li.%i", (long)t->start_play.tv_sec, (int)t->start_play.tv_usec);
     a_info("  Capture : %li.%i", (long)t->start_capt.tv_sec, (int)t->start_capt.tv_usec);
-    a_info("     Diff : %li", timestamp_diff(t->start_play, t->start_capt));
+    a_info("     Diff : %li", timestamp_diff_usecs(t->start_play, t->start_capt));
+}
+
+int sndx_hstats_enable( //
+    sndx_hstats_t* t,
+    snd_pcm_t*     pcm,
+    u32            rate,
+    tstamp_type_t  type,
+    bool           do_delay,
+    snd_output_t*  output)
+{
+    int err;
+
+    // Reset anything already there
+    t->avail  = 0;
+    t->delay  = 0;
+    t->frames = 0;
+    t->rate   = rate;
+    memset(&t->config, 0, sizeof(tstamp_config_t));
+    memset(&t->report, 0, sizeof(tstamp_report_t));
+
+    // NOTE: Not sure if we have to do this each time or only on enable
+    t->config.type_requested = type;
+    t->config.report_delay   = do_delay;
+
+    snd_pcm_hw_params_t* hwparams_p;
+    snd_pcm_hw_params_alloca(&hwparams_p);
+    err = snd_pcm_hw_params_current(pcm, hwparams_p);
+    SndReturn_(err, "Failed: snd_pcm_hw_params_current: %s");
+
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_COMPAT))
+        a_info("Playback supports audio compat timestamps");
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT))
+        a_info("Playback supports audio default timestamps");
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK))
+        a_info("Playback supports audio link timestamps");
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE))
+        a_info("Playback supports audio link absolute timestamps");
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED))
+        a_info("Playback supports audio link estimated timestamps");
+    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED))
+        a_info("Playback supports audio link synchronized timestamps");
+
+    snd_pcm_sw_params_t* swparams_p;
+    snd_pcm_sw_params_alloca(&swparams_p);
+    err = snd_pcm_sw_params_current(pcm, swparams_p);
+    SndReturn_(err, "Failed: snd_pcm_sw_params_current: %s");
+
+    err = snd_pcm_sw_params_set_tstamp_mode(pcm, swparams_p, SND_PCM_TSTAMP_ENABLE);
+    SndReturn_(err, "Failed: snd_pcm_sw_params_set_tstamp_mode: %s");
+
+    err = snd_pcm_sw_params_set_tstamp_type(pcm, swparams_p, TSTAMP_TYPE);
+    SndReturn_(err, "Failed: snd_pcm_sw_params_set_tstamp_type: %s");
+
+    err = snd_pcm_sw_params(pcm, swparams_p);
+    SndReturn_(err, "Failed: snd_pcm_sw_params: %s");
+
+    return 0;
+}
+
+int sndx_hstats_capture(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_processed, output_t* output)
+{
+    int err;
+
+    snd_pcm_status_t* status;
+    snd_pcm_status_alloca(&status);
+    snd_pcm_status_set_audio_htstamp_config(status, &t->config);
+
+    err = snd_pcm_status(handle, status);
+    SndReturn_(err, "Failed: snd_pcm_status: %s");
+
+    snd_pcm_status_get_trigger_htstamp(status, &t->trigger);
+    snd_pcm_status_get_htstamp(status, &t->tstamp);
+    snd_pcm_status_get_audio_htstamp(status, &t->audio);
+    snd_pcm_status_get_audio_htstamp_report(status, &t->report);
+
+    t->avail = snd_pcm_status_get_avail(status);
+    t->delay = snd_pcm_status_get_delay(status);
+
+    t->frames += frames_processed; /* read plus queued */
+
+    return 0;
+}
+
+void sndx_hstats_update_frames(sndx_hstats_t* t, uframes_t frames) { t->frames += frames; }
+
+/** @brief Print report of current snapshot and print difference in sys and snd time */
+void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
+{
+    if (t->report.valid == 0) a_info("Audio playback timestamp report invalid - ");
+    if (t->report.accuracy_report == 0) a_info("Audio playback timestamp accuracy report invalid");
+
+    a_info("  systime      : %ld nsec \n"
+           "  audio time   : %ld nsec \n"
+           "  resolution   : %ld      \n"
+           "  systime delta: %d ns    \n",
+           htstamp_diff_nsecs(t->tstamp, t->trigger),                              //
+           htimestamp_nsecs(t->audio),                                             //
+           htstamp_diff_nsecs(t->tstamp, t->trigger) - htimestamp_nsecs(t->audio), //
+           t->report.accuracy);
+
+    i64 current = t->frames + t->delay; /* read plus queued */
+
+    a_info("  curr_count  : %lli\n"
+           "  driver count: %li \n"
+           "  delta       : %lli\n",                                          //
+           (i64)current * 1000000000LL / t->rate, htimestamp_nsecs(t->audio), //
+           (i64)current * 1000000000LL / t->rate - htimestamp_nsecs(t->audio));
 }
