@@ -137,10 +137,11 @@ int sndx_hstats_enable( //
     int err;
 
     // Reset anything already there
-    t->avail  = 0;
-    t->delay  = 0;
-    t->frames = 0;
-    t->rate   = rate;
+    t->avail    = 0;
+    t->delay    = 0;
+    t->frames   = 0;
+    t->rate     = rate;
+    t->do_delay = do_delay;
     memset(&t->config, 0, sizeof(tstamp_config_t));
     memset(&t->report, 0, sizeof(tstamp_report_t));
 
@@ -210,13 +211,13 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
 /** @brief Print report of current snapshot and print difference in sys and snd time */
 void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
 {
-    if (t->report.valid == 0) a_info("Audio playback timestamp report invalid - ");
-    if (t->report.accuracy_report == 0) a_info("Audio playback timestamp accuracy report invalid");
+    if (t->report.valid == 0) a_info("Audio timestamp report invalid");
+    if (t->report.accuracy_report == 0) a_info("Audio timestamp accuracy report invalid");
 
     a_info("  systime      : %ld nsec \n"
            "  audio time   : %ld nsec \n"
-           "  resolution   : %ld      \n"
-           "  systime delta: %d ns    \n",
+           "  systime delta: %ld nsec \n"
+           "  resolution   : %d       \n",
            htstamp_diff_nsecs(t->tstamp, t->trigger),                              //
            htimestamp_nsecs(t->audio),                                             //
            htstamp_diff_nsecs(t->tstamp, t->trigger) - htimestamp_nsecs(t->audio), //
@@ -224,9 +225,16 @@ void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
 
     i64 current = t->frames + t->delay; /* read plus queued */
 
-    a_info("  curr_count  : %lli\n"
-           "  driver count: %li \n"
-           "  delta       : %lli\n",                                          //
-           (i64)current * 1000000000LL / t->rate, htimestamp_nsecs(t->audio), //
-           (i64)current * 1000000000LL / t->rate - htimestamp_nsecs(t->audio));
+    i64 curr_count = (i64)current * 1000000000LL / t->rate;
+
+    a_info("  do_delay    : %d  \n"
+           "  curr_count  : %ld \n"
+           "  driver count: %ld \n"
+           "  delta       : %ld nsec (%ld usec, %ld msec) \n", //
+           t->do_delay,                                        //
+           curr_count,                                         //
+           htimestamp_nsecs(t->audio),                         //
+           curr_count - htimestamp_nsecs(t->audio),            //
+           (curr_count - htimestamp_nsecs(t->audio)) / 1'000,  //
+           (curr_count - htimestamp_nsecs(t->audio)) / 1'000'000);
 }

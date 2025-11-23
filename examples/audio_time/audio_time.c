@@ -41,6 +41,7 @@
  *
  */
 #include "duplex.h"
+#include "timer.h"
 
 // Application
 int main()
@@ -63,11 +64,28 @@ int main()
 
     sndx_dump_duplex(d, d->out);
 
+    // Enable highresolution timestamps
+    sndx_hstats_t ht_play;
+    sndx_hstats_t ht_capt;
+
+    bool          do_delay = false;
+    tstamp_type_t type     = SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT;
+
+    err = sndx_hstats_enable(&ht_play, d->play, d->rate, type, do_delay, d->out);
+    SndGoto_(err, __close, "Failed: sndx_hstats_enable (play): %s");
+
+    err = sndx_hstats_enable(&ht_capt, d->capt, d->rate, type, do_delay, d->out);
+    SndGoto_(err, __close, "Failed: sndx_hstats_enable (capt): %s");
+
     // PREPARED -> RUNNING
     err = sndx_duplex_start(d);
     SndGoto_(err, __close, "Failed: sndx_duplex_start: %s");
 
-    while (d->timer->frames_capt < d->rate * 10)
+    // Update playback for silence
+    err = sndx_hstats_update(&ht_play, d->play, d->period_size * d->periods, d->out);
+    SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
+
+    while (d->timer->frames_capt < d->rate / 10)
     {
         i64 r;
 
@@ -82,7 +100,12 @@ int main()
         uframes_t len = d->period_size;
         do { r = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len); } while (r == -EAGAIN);
         SndGoto_(r, __close, "Failed: snd_pcm_mmap_readi: %s");
-        if (r > 0) { d->timer->frames_capt += r; }
+
+        // Even if r == 0 ; if r < 0, caught above
+        d->timer->frames_capt += r;
+
+        err = sndx_hstats_update(&ht_capt, d->capt, r, d->out);
+        SndGoto_(err, __close, "Failed: sndx_hstats_update (capt): %s");
 
         // To soft buffer -> reads from devdata
         sndx_buffer_dev_to_buf(d->buf_capt, 0, r);
@@ -115,8 +138,17 @@ int main()
             len -= r;
 
             d->timer->frames_play += r;
+
+            err = sndx_hstats_update(&ht_play, d->play, r, d->out);
+            SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
         }
     }
+
+    a_title("Capture");
+    sndx_dump_hstats(&ht_capt, d->out);
+
+    a_title("Playback");
+    sndx_dump_hstats(&ht_play, d->out);
 
 __close:
 

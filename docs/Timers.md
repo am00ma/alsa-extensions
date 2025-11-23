@@ -1,4 +1,20 @@
-# timers
+# Timers
+
+- [ALSA Kernel Documentation](https://docs.kernel.org/sound/designs/timestamping.html)
+
+Various times measured by ALSA:
+
+```
+--------------------------------------------------------------> time
+  ^               ^              ^                ^           ^
+  |               |              |                |           |
+ analog         link            dma              app       FullBuffer
+ time           time           time              time        time
+  |               |              |                |           |
+  |< codec delay >|<--hw delay-->|<queued samples>|<---avail->|
+  |<----------------- delay---------------------->|           |
+                                 |<----ring buffer length---->|
+```
 
 All the various choices available:
 
