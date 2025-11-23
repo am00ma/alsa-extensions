@@ -54,12 +54,12 @@ int main()
 
     // play: Blocking, capt: Nonblock
     sndx_duplex_t* d;
-    err = sndx_duplex_open(            //
-        &d,                            //
-        "hw:FC1,0", "hw:FC1,0",        //
-        SND_PCM_FORMAT_S16_LE,         //
-        48000, 128, 2,                 //
-        SND_PCM_ACCESS_RW_INTERLEAVED, //
+    err = sndx_duplex_open(              //
+        &d,                              //
+        "hw:A96,0", "hw:A96,0",          //
+        SND_PCM_FORMAT_S32_LE,           //
+        48000, 128, 2,                   //
+        SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
 
@@ -96,8 +96,8 @@ int main()
         uframes_t len    = d->period_size;
         sframes_t frames = 0;
 
-        frames = snd_pcm_readi(d->capt, d->buf_capt->devdata, len);
-        SndGoto_(frames, __close, "Failed: snd_pcm_readi: %s");
+        frames = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_readi: %s");
 
         // Even if r == 0 ; if r < 0, caught above
         d->timer->frames_capt += frames;
@@ -123,20 +123,20 @@ int main()
         sndx_buffer_buf_to_dev(d->buf_play, 0, frames);
 
         // Write
-        frames = snd_pcm_writei(d->play, d->buf_play->devdata, len);
-        SndGoto_(frames, __close, "Failed: snd_pcm_writei: %s");
+        frames = snd_pcm_mmap_writei(d->play, d->buf_play->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_writei: %s");
 
         d->timer->frames_play += frames;
 
         err = sndx_hstats_update(&ht_play, d->play, frames, d->out);
         SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
+
+        a_title("Capture");
+        sndx_dump_hstats(&ht_capt, +1, d->out);
+
+        a_title("Playback");
+        sndx_dump_hstats(&ht_play, -1, d->out);
     }
-
-    a_title("Capture");
-    sndx_dump_hstats(&ht_capt, d->out);
-
-    a_title("Playback");
-    sndx_dump_hstats(&ht_play, d->out);
 
 __close:
 

@@ -122,4 +122,4 @@ int sndx_hstats_enable( //
 int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_processed, output_t* output);
 
 /** @brief Print report of current snapshot and print difference in sys and snd time */
-void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output);
+void sndx_dump_hstats(sndx_hstats_t* t, int adjust_factor, snd_output_t* output);

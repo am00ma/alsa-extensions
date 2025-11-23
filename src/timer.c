@@ -225,9 +225,14 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
 }
 
 /** @brief Print report of current snapshot and print difference in sys and snd time */
-void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
+void sndx_dump_hstats(sndx_hstats_t* t, int adjust_factor, snd_output_t* output)
 {
-    i64 current    = t->frames + t->delay; /* read plus queued */
+    /* adjust_factor:
+     *      Capture :  read plus queued : adjust_factor = +1
+     *      Playback:  written minus queued : adjust_factor = -1
+     *
+     * */
+    i64 current    = t->frames + adjust_factor * t->delay;
     i64 curr_count = (i64)current * 1000000000LL / t->rate;
 
     a_info("  do_delay    : %d  \n"
