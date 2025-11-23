@@ -55,8 +55,8 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:FC1,0", "hw:FC1,0",          //
-        SND_PCM_FORMAT_S16_LE,           //
+        "hw:A96,0", "hw:A96,0",          //
+        SND_PCM_FORMAT_S32_LE,           //
         48000, 128, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
@@ -85,10 +85,8 @@ int main()
     err = sndx_hstats_update(&ht_play, d->play, d->period_size * d->periods, d->out);
     SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
 
-    while (d->timer->frames_capt < d->rate)
+    while (d->timer->frames_capt < d->rate * 10)
     {
-        i64 r;
-
         // Wait -> no error checking, still works somehow
         err = snd_pcm_wait(d->capt, 1000);
         SndGoto_(err, __close, "Failed: snd_pcm_wait: %s");
@@ -97,23 +95,25 @@ int main()
         //       thus rendering the mmap quite useless
 
         // Read - prob period_size as that is guaranteed in avail_min?
-        uframes_t len = d->period_size;
-        do { r = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len); } while (r == -EAGAIN);
-        SndGoto_(r, __close, "Failed: snd_pcm_mmap_readi: %s");
+        uframes_t len    = d->period_size;
+        sframes_t frames = 0;
+
+        frames = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_readi: %s");
 
         // Even if r == 0 ; if r < 0, caught above
-        d->timer->frames_capt += r;
+        d->timer->frames_capt += frames;
 
-        err = sndx_hstats_update(&ht_capt, d->capt, r, d->out);
+        err = sndx_hstats_update(&ht_capt, d->capt, frames, d->out);
         SndGoto_(err, __close, "Failed: sndx_hstats_update (capt): %s");
 
         // To soft buffer -> reads from devdata
-        sndx_buffer_dev_to_buf(d->buf_capt, 0, r);
+        sndx_buffer_dev_to_buf(d->buf_capt, 0, frames);
 
         // Copy soft buffer
         isize pos_play, pos_capt;
         RANGE(chn, d->ch_play)
-        RANGE(i, r)
+        RANGE(i, frames)
         {
             pos_play = i + chn * d->buf_play->frames;
             pos_capt = i;
@@ -122,26 +122,17 @@ int main()
         }
 
         // To write buffer -> writes to devdata
-        sndx_buffer_buf_to_dev(d->buf_play, 0, r);
+        sndx_buffer_buf_to_dev(d->buf_play, 0, frames);
 
         // Write
-        len               = r;
-        isize pos_devdata = 0;
-        while (len > 0)
-        {
-            r = snd_pcm_mmap_writei(d->play, &d->buf_play->devdata[pos_devdata], len);
-            if (r == -EAGAIN) continue;
-            SndGoto_(r, __close, "Failed: snd_pcm_mmap_writei: %s");
+        len    = d->period_size;
+        frames = snd_pcm_mmap_writei(d->play, d->buf_play->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_writei: %s");
 
-            pos_devdata += r * d->buf_play->channels * d->buf_play->bytes;
+        d->timer->frames_play += frames;
 
-            len -= r;
-
-            d->timer->frames_play += r;
-
-            err = sndx_hstats_update(&ht_play, d->play, r, d->out);
-            SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
-        }
+        err = sndx_hstats_update(&ht_play, d->play, frames, d->out);
+        SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
     }
 
     a_title("Capture");
