@@ -55,8 +55,8 @@ int main()
     sndx_duplex_t* d;
     err = sndx_duplex_open(              //
         &d,                              //
-        "hw:A96,0", "hw:A96,0",          //
-        SND_PCM_FORMAT_S32_LE,           //
+        "hw:FC1,0", "hw:FC1,0",          //
+        SND_PCM_FORMAT_S16_LE,           //
         48000, 128, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
