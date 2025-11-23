@@ -3,8 +3,9 @@
  *
  *  Almost same as latency for wait-read-write loop
  *
- *  NOTE: It reads to `buffer_c` and writes to `buffer_p`,
- *        so there is no output from the speakers
+ *  When adjusting for delay, we use `adjust_factor`:
+ *      Capture :  read plus queued     : adjust_factor = +1
+ *      Playback:  written minus queued : adjust_factor = -1
  *
  *  1. No checking xruns, directly exits, still works, never got an xrun
  *  2. This time error checking `snd_pcm_wait`, `readi`, `writei`, but straight fatal
