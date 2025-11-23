@@ -123,6 +123,8 @@ typedef snd_pcm_sw_params_t    sw_params_t;
 /* ---------------------------------------------------------------------------
  * Normal Error handling -> prints to stderr
  * ------------------------------------------------------------------------- */
+#define Free(x) if (x) { free(x); x = nullptr; }
+
 #define p_err(err, behaviour, ...)            \
     if (err) {                                \
         p_error("%s:%d", __FILE__, __LINE__); \

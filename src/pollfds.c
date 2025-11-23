@@ -25,11 +25,7 @@ void sndx_pollfds_close(sndx_pollfds_t* p)
 {
     if (!p) return;
 
-    if (p->addr)
-    {
-        free(p->addr);
-        p->addr = nullptr;
-    }
+    Free(p->addr);
 
     free(p);
     p = nullptr;

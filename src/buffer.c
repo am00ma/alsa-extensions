@@ -63,6 +63,8 @@ void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames
 
 int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output)
 {
+    int err;
+
     sndx_buffer_t* b;
     b = calloc(1, sizeof(*b));
     RetVal_(!b, -ENOMEM, "Failed calloc buffer_t* b");
@@ -79,16 +81,20 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
     b->to_dev_idx_float32 = snd_pcm_lfloat_get_s32_index(SND_PCM_FORMAT_FLOAT);
 
     b->dev = calloc(channels, sizeof(area_t));
-    RetVal_(!b, -ENOMEM, "Failed calloc area_t b->dev");
+    err    = -(!b->dev);
+    Goto_(err, __close, "Failed calloc area_t* b->dev");
 
     b->buf = calloc(channels, sizeof(area_t));
-    RetVal_(!b, -ENOMEM, "Failed calloc area_t b->buf");
+    err    = -(!b->buf);
+    Goto_(err, __close, "Failed calloc area_t* b->buf");
 
     b->bufdata = calloc(channels * frames, sizeof(float));
-    RetVal_(!b, -ENOMEM, "Failed calloc float b->bufdata");
+    err        = -(!b->bufdata);
+    Goto_(err, __close, "Failed calloc float* b->bufdata");
 
     b->devdata = calloc(channels * frames, b->bytes);
-    RetVal_(!b, -ENOMEM, "Failed calloc float b->devdata");
+    err        = -(!b->devdata);
+    Goto_(err, __close, "Failed calloc char* b->devdata");
 
     RANGE(chn, b->channels)
     {
@@ -107,32 +113,22 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
     *bufp = b;
 
     return 0;
+
+__close:
+    sndx_buffer_close(b);
+    *bufp = nullptr;
+
+    return err;
 }
 
 void sndx_buffer_close(sndx_buffer_t* b)
 {
     if (!b) return;
 
-    if (b->dev)
-    {
-        free(b->dev);
-        b->dev = nullptr;
-    }
-    if (b->buf)
-    {
-        free(b->buf);
-        b->buf = nullptr;
-    }
-    if (b->bufdata)
-    {
-        free(b->bufdata);
-        b->bufdata = nullptr;
-    }
-    if (b->devdata)
-    {
-        free(b->devdata);
-        b->devdata = nullptr;
-    }
+    Free(b->dev);
+    Free(b->buf);
+    Free(b->bufdata);
+    Free(b->devdata);
 
     free(b);
     b = nullptr;

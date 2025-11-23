@@ -69,7 +69,7 @@ int sndx_duplex_open(                //
     sndx_duplex_t* d;
 
     d = calloc(1, sizeof(*d));
-    if (!d) return -ENOMEM;
+    RetVal_(!d, -ENOMEM, "Failed calloc duplex_t* b");
 
     d->out = output;
 
@@ -153,7 +153,8 @@ int sndx_duplex_open(                //
     SndGoto_(err, __close, "Failed: sndx_buffer_open: %s"); // can only fail cause of memory
 
     d->timer = calloc(1, sizeof(sndx_timer_t));
-    Goto_(-(!d->timer), __close, "Failed: calloc(timer)"); // can only fail cause of memory
+    err      = -(!d->timer);
+    Goto_(err, __close, "Failed: calloc(timer)"); // can only fail cause of memory
 
     *duplexp = d;
 
@@ -189,11 +190,7 @@ int sndx_duplex_close(sndx_duplex_t* d)
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
-    if (d->timer)
-    {
-        free(d->timer);
-        d->timer = nullptr;
-    }
+    Free(d->timer);
 
     free(d);
     d = nullptr;
