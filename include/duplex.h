@@ -41,6 +41,7 @@ typedef struct sndx_duplex_t
     u32       ch_play;     ///< Set to min channels for playback pcm
     u32       ch_capt;     ///< Set to min channels for capture pcm
     format_t  format;      ///< Currently assuming same
+    access_t  access;      ///< To switch mmap or not
     u32       rate;        ///< Aslo must match
     uframes_t period_size; ///< Must match
     u32       periods;     ///< Must match, buffer_size = period_size * periods
@@ -62,6 +63,8 @@ void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output);
 void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output);
 
 /** @brief Open a pair of playback and capture devices and link them.
+ *
+ *  NOTE: Play is blocking, Capture is nonblocking
  *
  *  Process:
  *      1. Open pcm handles
@@ -147,5 +150,6 @@ sframes_t sndx_duplex_write( //
  *
  * Usually set to `period_size * nperiods`.
  */
-int sndx_duplex_write_initial_silence(sndx_duplex_t* d);
-int sndx_duplex_write_initial_silence_direct(sndx_duplex_t* d);
+int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d);
+int sndx_duplex_write_mmap_initial_silence(sndx_duplex_t* d);
+int sndx_duplex_write_mmap_initial_silence_direct(sndx_duplex_t* d);

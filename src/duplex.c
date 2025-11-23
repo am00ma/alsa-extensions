@@ -1,5 +1,6 @@
 #include "duplex.h"
 #include "params.h"
+#include <alsa/asoundlib.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -131,6 +132,7 @@ int sndx_duplex_open(                //
     SndGoto_(err, __close, "Failed: snd_pcm_nonblock: %s");
 
     d->format      = play_params.format;
+    d->access      = play_params.access;
     d->rate        = rate;
     d->period_size = period_size;
     d->periods     = periods;
@@ -198,7 +200,32 @@ int sndx_duplex_close(sndx_duplex_t* d)
     return 0;
 }
 
-int sndx_duplex_write_initial_silence_direct(sndx_duplex_t* d)
+int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d)
+{
+    int       err;
+    output_t* output = d->out;
+
+    char* buf[4096];
+
+    err = snd_pcm_format_set_silence(d->format, buf, d->period_size);
+    SndGoto_(err, __error, "Failed: snd_pcm_format_set_silence: %s");
+
+    RANGE(i, d->periods)
+    {
+        err = snd_pcm_writei(d->play, buf, d->period_size);
+        SndGoto_(err, __error, "Failed: snd_pcm_mmap_begin: %s");
+    }
+    a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", //
+           d->period_size * d->periods, d->period_size, d->periods);
+
+    return 0;
+
+__error:
+    sndx_dump_duplex_status(d, d->out);
+    return err;
+}
+
+int sndx_duplex_write_mmap_initial_silence_direct(sndx_duplex_t* d)
 {
     int       err;
     output_t* output = d->out;
@@ -235,7 +262,7 @@ __error:
     return err;
 }
 
-int sndx_duplex_write_initial_silence(sndx_duplex_t* d)
+int sndx_duplex_write_mmap_initial_silence(sndx_duplex_t* d)
 {
     int       err;
     output_t* output = d->out;
@@ -285,11 +312,24 @@ int sndx_duplex_start(sndx_duplex_t* d)
     int       err;
     output_t* output = d->out;
 
-    err = sndx_duplex_write_initial_silence(d);
-    SndCheck_(err, "Failed sndx_duplex_write_initial_silence: %s");
+    switch (d->access)
+    {
+    case SND_PCM_ACCESS_MMAP_INTERLEAVED:
+        err = sndx_duplex_write_mmap_initial_silence(d);
+        SndCheck_(err, "Failed sndx_duplex_write_mmap_initial_silence: %s");
 
-    err = snd_pcm_start(d->play);
-    SndCheck_(err, "Failed snd_pcm_start play: %s");
+        // Apparently, we start manually only in this case
+        err = snd_pcm_start(d->play);
+        SndReturn_(err, "Failed snd_pcm_start play: %s");
+
+        break;
+    case SND_PCM_ACCESS_RW_INTERLEAVED:
+        err = sndx_duplex_write_rw_initial_silence(d);
+        SndCheck_(err, "Failed sndx_duplex_write_rw_initial_silence: %s");
+        break;
+
+    default: RetVal(-1, -1, "Unknown access: %s", snd_pcm_access_name(d->access));
+    }
 
     if (!d->linked)
     {

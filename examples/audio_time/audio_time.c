@@ -52,21 +52,16 @@ int main()
     err = snd_output_stdio_attach(&output, stderr, 0);
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
+    // play: Blocking, capt: Nonblock
     sndx_duplex_t* d;
-    err = sndx_duplex_open(              //
-        &d,                              //
-        "hw:FC1,0", "hw:FC1,0",          //
-        SND_PCM_FORMAT_S16_LE,           //
-        48000, 128, 2,                   //
-        SND_PCM_ACCESS_MMAP_INTERLEAVED, //
+    err = sndx_duplex_open(            //
+        &d,                            //
+        "hw:FC1,0", "hw:FC1,0",        //
+        SND_PCM_FORMAT_S16_LE,         //
+        48000, 128, 2,                 //
+        SND_PCM_ACCESS_RW_INTERLEAVED, //
         output);
     SndFatal_(err, "Failed sndx_duplex_open: %s");
-
-    err = snd_pcm_nonblock(d->play, 0);
-    SndFatal_(err, "Failed: snd_pcm_nonblock (play): %s");
-
-    err = snd_pcm_nonblock(d->capt, SND_PCM_NONBLOCK);
-    SndFatal_(err, "Failed: snd_pcm_nonblock (capt): %s");
 
     sndx_dump_duplex(d, d->out);
 
@@ -97,15 +92,12 @@ int main()
         err = snd_pcm_wait(d->capt, 1000);
         SndGoto_(err, __close, "Failed: snd_pcm_wait: %s");
 
-        // NOTE: We are copying twice by not using mmap_begin, mmap_commit
-        //       thus rendering the mmap quite useless
-
         // Read - prob period_size as that is guaranteed in avail_min?
         uframes_t len    = d->period_size;
         sframes_t frames = 0;
 
-        frames = snd_pcm_mmap_readi(d->capt, d->buf_capt->devdata, len);
-        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_readi: %s");
+        frames = snd_pcm_readi(d->capt, d->buf_capt->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_readi: %s");
 
         // Even if r == 0 ; if r < 0, caught above
         d->timer->frames_capt += frames;
@@ -131,8 +123,8 @@ int main()
         sndx_buffer_buf_to_dev(d->buf_play, 0, frames);
 
         // Write
-        frames = snd_pcm_mmap_writei(d->play, d->buf_play->devdata, len);
-        SndGoto_(frames, __close, "Failed: snd_pcm_mmap_writei: %s");
+        frames = snd_pcm_writei(d->play, d->buf_play->devdata, len);
+        SndGoto_(frames, __close, "Failed: snd_pcm_writei: %s");
 
         d->timer->frames_play += frames;
 

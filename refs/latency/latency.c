@@ -88,7 +88,8 @@ long long timestamp_diff_micro(timestamp_t* tstamp)
         diff.tv_sec  = now.tv_sec - tstamp->tv_sec - 1;
         diff.tv_nsec = (now.tv_nsec + 1000000000L) - tstamp->tv_nsec;
     }
-    else {
+    else
+    {
         diff.tv_sec  = now.tv_sec - tstamp->tv_sec;
         diff.tv_nsec = now.tv_nsec - tstamp->tv_nsec;
     }
@@ -436,7 +437,8 @@ long readbuf(snd_pcm_t* handle, char* buf, long len, size_t* frames, size_t* max
         }
         // printf("read = %li\n", r);
     }
-    else {
+    else
+    {
         int frame_bytes = (snd_pcm_format_physical_width(format) / 8) * channels;
         do
         {
@@ -800,7 +802,8 @@ int main(int argc, char* argv[])
                 }
             }
             if ((r = readbuf(chandle, buffer, cap_avail, &frames_in, &in_max)) < 0) ok = 0;
-            else {
+            else
+            {
                 if (effect) applyeffect(buffer, r);
                 if (writebuf(phandle, buffer, r, &frames_out) < 0) ok = 0;
             }

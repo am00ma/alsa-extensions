@@ -48,7 +48,7 @@ int main()
     // Timer
     sndx_timer_t timer = {};
 
-    err = sndx_duplex_write_initial_silence(d);
+    err = sndx_duplex_write_mmap_initial_silence(d);
     SndCheck(err, "Failed sndx_duplex_write_initial_silence: %s");
 
     err = snd_pcm_start(d->play);
