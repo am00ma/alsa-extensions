@@ -46,9 +46,19 @@ void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames
     RANGE(i, (isize)frames) { a_log("%2.2f | ", b->bufdata[i]); }
     a_log("\n");
 
-    a_log("  b->devdata: ");
-    RANGE(i, (isize)frames) { a_log("%d | ", (i32)(b->devdata[i * b->bytes])); }
-    a_log("\n");
+    // NOTE: Not working
+    if (b->bytes == 4)
+    {
+        a_log("  b->devdata: ");
+        RANGE(i, (isize)frames) { a_log("%d | ", (i32) * (&b->devdata[i * b->bytes])); }
+        a_log("\n");
+    }
+    else if (b->bytes == 2)
+    {
+        a_log("  b->devdata: ");
+        RANGE(i, (isize)frames) { a_log("%d | ", (i16) * (&b->devdata[i * b->bytes])); }
+        a_log("\n");
+    }
 }
 
 int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output)
@@ -62,11 +72,11 @@ int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframe
     b->channels = channels;
     b->frames   = frames;
 
-    b->from_dev_int32_idx   = snd_pcm_linear_put_index(b->format, SND_PCM_FORMAT_S32);
-    b->from_dev_float32_idx = snd_pcm_lfloat_get_s32_index(SND_PCM_FORMAT_FLOAT);
+    b->from_dev_int32_idx   = snd_pcm_linear_get_index(b->format, SND_PCM_FORMAT_S32);
+    b->from_dev_float32_idx = snd_pcm_lfloat_put_s32_index(SND_PCM_FORMAT_FLOAT);
 
-    b->to_dev_float32_idx = snd_pcm_lfloat_put_s32_index(SND_PCM_FORMAT_FLOAT);
-    b->to_dev_int32_idx   = snd_pcm_linear_get_index(SND_PCM_FORMAT_S32, b->format);
+    b->to_dev_int32_idx   = snd_pcm_linear_put_index(SND_PCM_FORMAT_S32, b->format);
+    b->to_dev_float32_idx = snd_pcm_lfloat_get_s32_index(SND_PCM_FORMAT_FLOAT);
 
     b->dev = calloc(channels, sizeof(area_t));
     RetVal_(!b, -ENOMEM, "Failed calloc area_t b->dev");
@@ -130,24 +140,18 @@ void sndx_buffer_close(sndx_buffer_t* b)
 
 void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
 {
-    int int32_idx   = snd_pcm_linear_put_index(SND_PCM_FORMAT_S32, b->format);
-    int float32_idx = snd_pcm_lfloat_get_s32_index(SND_PCM_FORMAT_FLOAT);
-
-    snd_pcm_lfloat_convert_float_integer( //
-        b->dev, offset,                   //
-        b->buf, offset,                   //
-        b->channels, frames,              //
-        int32_idx, float32_idx);
-}
-
-void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
-{
-    int int32_idx   = snd_pcm_linear_get_index(b->format, SND_PCM_FORMAT_S32);
-    int float32_idx = snd_pcm_lfloat_put_s32_index(SND_PCM_FORMAT_FLOAT);
-
     snd_pcm_lfloat_convert_integer_float( //
         b->buf, offset,                   //
         b->dev, offset,                   //
         b->channels, frames,              //
-        int32_idx, float32_idx);
+        b->from_dev_int32_idx, b->from_dev_float32_idx);
+}
+
+void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames)
+{
+    snd_pcm_lfloat_convert_float_integer( //
+        b->dev, offset,                   //
+        b->buf, offset,                   //
+        b->channels, frames,              //
+        b->to_dev_int32_idx, b->to_dev_float32_idx);
 }
