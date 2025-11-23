@@ -193,9 +193,7 @@ int sndx_duplex_close(sndx_duplex_t* d)
     sndx_buffer_close(d->buf_play);
 
     Free(d->timer);
-
-    free(d);
-    d = nullptr;
+    Free(d);
 
     return 0;
 }

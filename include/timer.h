@@ -1,6 +1,8 @@
 /** @file timer.h
  *  @brief Conversions, timestamping.
  *
+ *  Implementing timing from @see latency.c and @see audio_time.c
+ *
  *  tspec_t  : system timestamp
  *  tstamp_t : snd trigger timestamp
  */

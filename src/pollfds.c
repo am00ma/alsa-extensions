@@ -26,9 +26,7 @@ void sndx_pollfds_close(sndx_pollfds_t* p)
     if (!p) return;
 
     Free(p->addr);
-
-    free(p);
-    p = nullptr;
+    Free(p);
 }
 
 sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)

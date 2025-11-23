@@ -1,6 +1,4 @@
 #include "timer.h"
-#include "types.h"
-#include <alsa/asoundlib.h>
 
 #define TSTAMP_TYPE SND_PCM_TSTAMP_TYPE_MONOTONIC_RAW
 
