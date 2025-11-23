@@ -85,7 +85,7 @@ int main()
     err = sndx_hstats_update(&ht_play, d->play, d->period_size * d->periods, d->out);
     SndGoto_(err, __close, "Failed: sndx_hstats_update (play): %s");
 
-    while (d->timer->frames_capt < d->rate / 10)
+    while (d->timer->frames_capt < d->rate)
     {
         i64 r;
 

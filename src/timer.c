@@ -112,12 +112,12 @@ void sndx_dump_timer(sndx_timer_t* t, output_t* output)
     i64 diff  = timespec_diff_usecs(&t->start_sys, &t->stop_sys);
     i64 mtime = frames_to_micro(t->frames_capt, t->rate);
 
-    a_info("Timer: sys tspec vs count");
+    a_title("Timer: sys tspec vs count");
     a_info("  Elapsed real  : %9ld us", diff);
     a_info("  Elapsed device: %9ld us (from frames_capt, rate)", mtime);
     a_info("          Diff  : %9ld us (device - real)", mtime - diff);
 
-    a_info("Timer: snd trigger stamps");
+    a_title("Timer: snd trigger stamps");
     bool hw_sync = (t->start_play.tv_sec == t->start_capt.tv_sec && //
                     t->start_play.tv_usec == t->start_capt.tv_usec);
     a_info("  HW sync : %s", hw_sync ? "yes" : "no");
@@ -154,18 +154,34 @@ int sndx_hstats_enable( //
     err = snd_pcm_hw_params_current(pcm, hwparams_p);
     SndReturn_(err, "Failed: snd_pcm_hw_params_current: %s");
 
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_COMPAT))
-        a_info("Playback supports audio compat timestamps");
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT))
-        a_info("Playback supports audio default timestamps");
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK))
-        a_info("Playback supports audio link timestamps");
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE))
-        a_info("Playback supports audio link absolute timestamps");
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED))
-        a_info("Playback supports audio link estimated timestamps");
-    if (snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED))
-        a_info("Playback supports audio link synchronized timestamps");
+    // Dont know from where to get name
+    switch (type)
+    {
+    case SND_PCM_AUDIO_TSTAMP_TYPE_COMPAT:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_COMPAT);
+        Check_(err, "Stream does not support audio compat timestamps");
+        break;
+    case SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT);
+        Check_(err, "Stream does not support audio default timestamps");
+        break;
+    case SND_PCM_AUDIO_TSTAMP_TYPE_LINK:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK);
+        Check_(err, "Stream does not support audio link timestamps");
+        break;
+    case SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE);
+        Check_(err, "Stream does not support audio link absolute timestamps");
+        break;
+    case SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED);
+        Check_(err, "Stream does not support audio link estimated timestamps");
+        break;
+    case SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED:
+        err = !snd_pcm_hw_params_supports_audio_ts_type(hwparams_p, SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED);
+        Check_(err, "Stream does not support audio link synchronized timestamps");
+        break;
+    }
 
     snd_pcm_sw_params_t* swparams_p;
     snd_pcm_sw_params_alloca(&swparams_p);
@@ -211,17 +227,16 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
 /** @brief Print report of current snapshot and print difference in sys and snd time */
 void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
 {
-    if (t->report.valid == 0) a_info("Audio timestamp report invalid");
-    if (t->report.accuracy_report == 0) a_info("Audio timestamp accuracy report invalid");
-
-    a_info("  systime      : %ld nsec \n"
-           "  audio time   : %ld nsec \n"
-           "  systime delta: %ld nsec \n"
-           "  resolution   : %d       \n",
+    a_info("  systime      : %ld nsec    \n"
+           "  audio time   : %ld nsec %s \n"
+           "  systime delta: %ld nsec %s \n"
+           "  resolution   : %d %s       ",
            htstamp_diff_nsecs(t->tstamp, t->trigger),                              //
            htimestamp_nsecs(t->audio),                                             //
+           (t->report.valid == 0) ? "(invalid)" : "",                              //
            htstamp_diff_nsecs(t->tstamp, t->trigger) - htimestamp_nsecs(t->audio), //
-           t->report.accuracy);
+           (t->report.valid == 0) ? "(invalid)" : "",                              //
+           t->report.accuracy, (t->report.accuracy_report == 0) ? "(invalid)" : "");
 
     i64 current = t->frames + t->delay; /* read plus queued */
 
@@ -230,11 +245,11 @@ void sndx_dump_hstats(sndx_hstats_t* t, snd_output_t* output)
     a_info("  do_delay    : %d  \n"
            "  curr_count  : %ld \n"
            "  driver count: %ld \n"
-           "  delta       : %ld nsec (%ld usec, %ld msec) \n", //
-           t->do_delay,                                        //
-           curr_count,                                         //
-           htimestamp_nsecs(t->audio),                         //
-           curr_count - htimestamp_nsecs(t->audio),            //
-           (curr_count - htimestamp_nsecs(t->audio)) / 1'000,  //
+           "  delta       : %ld nsec (%ld usec, %ld msec) ",  //
+           t->do_delay,                                       //
+           curr_count,                                        //
+           htimestamp_nsecs(t->audio),                        //
+           curr_count - htimestamp_nsecs(t->audio),           //
+           (curr_count - htimestamp_nsecs(t->audio)) / 1'000, //
            (curr_count - htimestamp_nsecs(t->audio)) / 1'000'000);
 }
