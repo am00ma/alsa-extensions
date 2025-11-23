@@ -29,7 +29,83 @@ void sndx_pollfds_close(sndx_pollfds_t* p)
     Free(p);
 }
 
-sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
+int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output)
+{
+    if (!p) return -1;
+
+    Free(p->addr);
+
+    p->play_nfds = snd_pcm_poll_descriptors_count(play);
+    p->capt_nfds = snd_pcm_poll_descriptors_count(capt);
+
+    p->addr = calloc(p->play_nfds + p->capt_nfds, sizeof(pfd_t));
+    RetVal_(!p->addr, -ENOMEM, "Failed calloc pft_t* addr");
+
+    return 0;
+}
+
+int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
+{
+    int err;
+
+    status_t* status;
+    snd_pcm_status_alloca(&status);
+
+    err = snd_pcm_status(capt, status);
+    SndCheck_(err, "Failed: snd_pcm_status (capt): %s");
+
+    // Jack only checks capt
+    // err = snd_pcm_status(play, status);
+    // SndCheck_(err, "Failed: snd_pcm_status (play): %s");
+
+    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_SUSPENDED)
+    {
+        a_info("**** alsa_pcm: pcm in suspended state, resuming it");
+
+        err = snd_pcm_prepare(capt);
+        SndCheck_(err, "Failed: snd_pcm_prepare after suspend (capt): %s");
+
+        err = snd_pcm_prepare(play);
+        SndCheck_(err, "Failed: snd_pcm_prepare after suspend (play): %s");
+    }
+
+    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_XRUN)
+    {
+        p->xrun_count++;
+
+        struct timeval now, diff, tstamp;
+        snd_pcm_status_get_tstamp(status, &now);
+        snd_pcm_status_get_trigger_tstamp(status, &tstamp);
+
+        timersub(&now, &tstamp, &diff);
+        p->delayed_usecs = diff.tv_sec * 1000000.0 + diff.tv_usec;
+        a_info("**** alsa_pcm: xrun of at least %.3f msecs", p->delayed_usecs / 1000.0);
+
+        a_info("Repreparing capture");
+        err = snd_pcm_prepare(capt);
+        SndCheck_(err, "Failed: snd_pcm_prepare after xrun (capt): %s");
+
+        a_info("Repreparing playback");
+        err = snd_pcm_prepare(play);
+        SndCheck_(err, "Failed: snd_pcm_prepare after xrun (play): %s");
+    }
+
+    // TODO: Jack calls it restart
+
+    // err = snd_pcm_drop(play);
+    // SndCheck_(err, "Failed snd_pcm_drop play: %s");
+
+    // // Damn, need a lot here if not mixed with duplex
+    // if (!d->linked)
+    // {
+    //     err = snd_pcm_drop(capt);
+    //     SndCheck_(err, "Failed snd_pcm_drop capt: %s");
+    // }
+
+    return 0;
+}
+
+int sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
 {
     int err;
 
@@ -76,7 +152,7 @@ sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, 
         {
             // Currently same as any errno, but jack has special handling for gdb errors here
             if (errno == EINTR) { RetVal_(EINTR, -POLLFD_FATAL, "Received poll interrupt"); }
-            SysRetVal_(errno, -POLLFD_FATAL, "Poll call failed  %s");
+            SysReturn_(errno, "Poll call failed  %s");
         }
 
         poll_ret = get_microseconds();
@@ -86,17 +162,20 @@ sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, 
             retry_cnt++;
             if (retry_cnt > MAX_RETRY_COUNT)
             {
-                RetVal_(errno, -POLLFD_FATAL,                                                       //
-                        "Poll time out, polled for %ld usecs, Reached max retry cnt = %d, Exiting", //
-                        poll_ret - poll_enter, MAX_RETRY_COUNT);
+                SysReturn_(errno,
+                           "Poll time out"
+                           "   Polled for            = %ld usecs\n"
+                           "   Reached max retry cnt = %d       \n"
+                           "Exiting (%s)",
+                           poll_ret - poll_enter, MAX_RETRY_COUNT);
             }
 
             a_error("Poll time out, polled for %ld usecs, Retrying with a recovery, retry cnt = %d", //
                     poll_ret - poll_enter, retry_cnt);
 
-            // TODO: Run xrun recovery, but keeping track of retry count, i.e. restart the driver, if that fails, is fatal
-            // err = alsa_driver_xrun_recovery(d, delayed_usecs);
-            // RetVal_(err, -POLLFD_FATAL, "Poll time out, recovery failed with status = %d", err);
+            // Run xrun recovery, but keeping track of retry count, i.e. restart the driver, if that fails, is fatal
+            err = sndx_pollfds_xrun(p, play, capt, output);
+            SndReturn_(err, "Poll time out, xrun recovery failed with status = %d: %s", err);
         }
 
         if (p->poll_next && poll_ret > p->poll_next) { *delayed_usecs = poll_ret - p->poll_next; }
@@ -106,8 +185,8 @@ sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, 
         if (need_playback)
         {
             err = snd_pcm_poll_descriptors_revents(play, &p->addr[0], p->play_nfds, &revents);
-            RetVal_(err, -POLLFD_FATAL, "Playback revents failed");
-            if (revents & POLLNVAL) { RetVal_(-POLLNVAL, -POLLFD_FATAL, "Playback device disconnected"); }
+            SndReturn_(err, "Failed: snd_pcm_poll_descriptors_revents (play): %s");
+            if (revents & POLLNVAL) { SndReturn_(-POLLNVAL, "Device disconnected (play): %s"); }
             if (revents & POLLERR) { xrun_detected = true; }
             if (revents & POLLOUT) { need_playback = 0; }
         }
@@ -115,8 +194,8 @@ sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, 
         if (need_capture)
         {
             err = snd_pcm_poll_descriptors_revents(capt, &p->addr[ci], p->capt_nfds, &revents);
-            RetVal_(err, -POLLFD_FATAL, "Capture revents failed");
-            if (revents & POLLNVAL) { RetVal_(-POLLNVAL, -POLLFD_FATAL, "Capture device disconnected"); }
+            SndReturn_(err, "Failed: snd_pcm_poll_descriptors_revents (capt): %s");
+            if (revents & POLLNVAL) { SndReturn_(-POLLNVAL, "Device disconnected (capt): %s"); }
             if (revents & POLLERR) { xrun_detected = true; }
             if (revents & POLLOUT) { need_capture = 0; }
         }
@@ -124,10 +203,17 @@ sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, 
 
     if (xrun_detected)
     {
-        // TODO: Basically request to restart the driver, will reset retry count
-        // err = alsa_driver_xrun_recovery(p, delayed_usecs);
-        // return 0;
+        err = sndx_pollfds_xrun(p, play, capt, output);
+        SndReturn_(err, "Poll time out, xrun recovery failed with status = %d: %s", err);
     }
 
-    return 0;
+    // NOTE: jack also gets avail here as minimum of capt and play
+    // we extract it to a different function
+
+    return POLLFD_SUCCESS;
 }
+
+// int sndx_pollfds_avail(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
+// {
+//     return POLLFD_SUCCESS;
+// }

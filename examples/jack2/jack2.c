@@ -1,6 +1,5 @@
 #include "duplex.h"
 #include "pollfds.h"
-#include "types.h"
 
 typedef struct
 {
@@ -13,10 +12,12 @@ typedef struct
 int  jack_open(jack_t** jackp, output_t* output);
 void jack_close(jack_t* j);
 
-// int jack_start(jack_t* j);
-// int jack_stop(jack_t* j);
-// int jack_wait(jack_t* j, int extra_fd, uframes_t* avail, float* delayed_usecs);
-// int jack_xrun(jack_t* j);
+int jack_start(jack_t* j);
+int jack_stop(jack_t* j);
+
+int jack_xrun(jack_t* j);
+int jack_wait(jack_t* j);
+
 // int jack_read(jack_t* j, uframes_t frames);
 // int jack_write(jack_t* j, uframes_t frames);
 
@@ -87,6 +88,7 @@ int jack_start(jack_t* j)
     SndReturn_(err, "Failed sndx_pollfds_open: %s");
 
     // Fill silence and pcm_start playback (if not linked, also capture)
+    // Also starts timer, but maybe we should have a toggle for that
     err = sndx_duplex_start(j->d);
     SndReturn_(err, "Failed sndx_duplex_start: %s");
 
@@ -98,15 +100,92 @@ int jack_stop(jack_t* j)
     int       err;
     output_t* output = j->d->out;
 
-    err = snd_pcm_drop(j->d->play);
-    SndReturn_(err, "Failed snd_pcm_drop: %s");
+    // TODO: Clear output: Can i not do that with drain silence (thought there's something like that)?
+    // err = snd_pcm_drain(j->d->play);
+    // SndReturn_(err, "Failed snd_pcm_drain (play): %s");
 
-    if (!j->d->linked)
+    // Drop play, if linked, also drop capture
+    // Also stops timer, but maybe we should have a toggle for that
+    err = sndx_duplex_stop(j->d);
+    SndReturn_(err, "Failed sndx_duplex_stop: %s");
+
+    return 0;
+}
+
+/** @brief Reimplementation of alsa_driver_xrun_recovery */
+int jack_xrun(jack_t* j)
+{
+
+    int err;
+
+    sndx_duplex_t* d      = j->d;
+    output_t*      output = d->out;
+
+    status_t* status;
+    snd_pcm_status_alloca(&status);
+
+    err = snd_pcm_status(d->capt, status);
+    SndCheck_(err, "status error: %s");
+
+    // Jack only checks capt
+    // err = snd_pcm_status(d->play, status);
+    // SndCheck_(err, "status error: %s");
+
+    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_SUSPENDED)
     {
-        err = snd_pcm_drop(j->d->capt);
-        SndReturn_(err, "Failed snd_pcm_drop (capt): %s");
+        a_info("**** alsa_pcm: pcm in suspended state, resuming it");
+
+        err = snd_pcm_prepare(d->capt);
+        SndCheck_(err, "error preparing capture after suspend: %s");
+
+        err = snd_pcm_prepare(d->play);
+        SndCheck_(err, "error preparing playback after suspend: %s");
     }
 
+    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_XRUN)
+    {
+        j->p->xrun_count++;
+
+        struct timeval now, diff, tstamp;
+        snd_pcm_status_get_tstamp(status, &now);
+        snd_pcm_status_get_trigger_tstamp(status, &tstamp);
+
+        timersub(&now, &tstamp, &diff);
+        j->p->delayed_usecs = diff.tv_sec * 1000000.0 + diff.tv_usec;
+        a_info("**** alsa_pcm: xrun of at least %.3f msecs", j->p->delayed_usecs / 1000.0);
+
+        a_info("Repreparing capture");
+        err = snd_pcm_prepare(d->capt);
+        SndCheck_(err, "error preparing capture after xrun: %s");
+
+        a_info("Repreparing playback");
+        err = snd_pcm_prepare(d->play);
+        SndCheck_(err, "error preparing playback after xrun: %s");
+    }
+
+    // Jack calls it restart
+
+    err = jack_stop(j);
+    SndReturn_(err, "Failed: jack_stop: %s");
+
+    err = jack_start(j);
+    SndReturn_(err, "Failed: jack_start: %s");
+
+    return 0;
+}
+
+int jack_wait(jack_t* j)
+{
+    sndx_pollfds_poll_error_t perr;
+
+    perr = sndx_pollfds_wait(j->p, j->d->play, j->d->capt, j->d->out);
+
+    switch (perr)
+    {
+    case POLLFD_SUCCESS: break;
+    case POLLFD_FATAL: break;
+    case POLLFD_NEEDS_RESTART: break;
+    }
     return 0;
 }
 

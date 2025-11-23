@@ -24,6 +24,7 @@
 #include <stddef.h>         // ptrdiff_t
 #include <math.h>           // IWYU pragma: keep
 #include <sys/poll.h>       // Poll fds
+#include <sys/time.h>       // timersub
 #include <alsa/asoundlib.h> // ALSA
 #include <limits.h>         // INT_MAX
 

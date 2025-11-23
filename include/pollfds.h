@@ -36,21 +36,26 @@ typedef struct sndx_pollfds_t
     u64 period_usecs;
     u64 delayed_usecs;
     u64 last_wait_ust;
-    u64 xrun_count;
+    u32 xrun_count;
 
 } sndx_pollfds_t;
 
-/** @brief Allocate memory for struct pollfds. */
+/** @brief Allocate memory and init stats for struct pollfds */
 int sndx_pollfds_open(sndx_pollfds_t** pfdsp, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
 
-/** @brief Free memory from struct pollfds. */
+/** @brief Reset only poll fds memory, keeping stats */
+int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
+
+/** @brief Free and reallocate memory for struct pollfds */
+int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
+
+/** @brief Free memory from struct pollfds */
 void sndx_pollfds_close(sndx_pollfds_t* pfdsp);
 
 typedef enum sndx_pollfds_poll_error_t
 {
     POLLFD_SUCCESS = 0,
     POLLFD_FATAL,
-    POLLFD_RECOVERABLE,
     POLLFD_NEEDS_RESTART,
 
 } sndx_pollfds_poll_error_t;
@@ -67,13 +72,11 @@ typedef enum sndx_pollfds_poll_error_t
  *
  *    __retry:
  *
- *        err = sndx_pollfds_poll(p, &avail, output);
+ *        err = sndx_pollfds_poll(p, play, capt, output);
+ *        SndReturn_(err, "Failed: sndx_pollfds_poll: %s");
  *
- *        switch (err) {
- *        case POLLFD_FATAL: { return -1; };
- *        case POLLFD_RECOVERABLE: { xrun_recovery(); restart(); goto __retry; };
- *        case POLLFD_SUCCESS: break;
- *        }
+ *        err = sndx_pollfds_avail(p, play, capt, &avail, output);
+ *        SndReturn_(err, "Failed: sndx_pollfds_avail: %s");
  *
  *        Assert(avail != 0);
  *
@@ -87,4 +90,11 @@ typedef enum sndx_pollfds_poll_error_t
  *
  *
  * */
-sndx_pollfds_poll_error_t sndx_pollfds_poll(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+int sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+
+/** @brief Handle xrun, including stopping and starting again
+ *
+ *  Return value is indicated in both status as well as the return value
+ *
+ * */
+int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);

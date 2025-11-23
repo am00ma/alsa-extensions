@@ -5,10 +5,6 @@
 
 #include <limits.h>
 
-constexpr int XRUN_REPORT_DELAY = 0;
-constexpr int MAX_RETRY_COUNT   = 5;
-constexpr int under_gdb         = 0;
-
 // static inline u64 get_microseconds()
 // {
 //     u64     utime;
