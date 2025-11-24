@@ -188,7 +188,7 @@ int jack_read(jack_t* j, uframes_t nframes)
         sndx_buffer_mmap_dev_areas(j->d->buf_capt, areas);
 
         // Copy to float buffer
-        sndx_buffer_dev_to_buf(j->d->buf_capt, offset, contiguous);
+        sndx_buffer_dev_to_buf(j->d->buf_capt, nread, contiguous);
 
         // Commit to move to next batch
         err = snd_pcm_mmap_commit(j->d->capt, offset, contiguous);
@@ -231,7 +231,7 @@ int jack_write(jack_t* j, uframes_t nframes)
         sndx_buffer_mmap_dev_areas(j->d->buf_play, areas);
 
         // Copy to float buffer
-        sndx_buffer_buf_to_dev(j->d->buf_play, offset, contiguous);
+        sndx_buffer_buf_to_dev(j->d->buf_play, nwritten, contiguous);
 
         // TODO: silence untouched
 
