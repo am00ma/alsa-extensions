@@ -64,15 +64,16 @@ int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_
     return 0;
 }
 
-int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
+void sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
 {
 
     // NOTE: Strangely, none of these return on error, instead print error and continue ??
 
     int err;
 
-    RetVal_(play == nullptr, -EINVAL, "Invalid playback handle");
-    RetVal_(capt == nullptr, -EINVAL, "Invalid capture handle");
+    // Asserting here to show that sndx_pollfds_xrun can be of return type void
+    AssertMsg(play != nullptr, "Invalid playback handle");
+    AssertMsg(capt != nullptr, "Invalid capture handle");
 
     status_t* status;
     snd_pcm_status_alloca(&status);
@@ -115,11 +116,9 @@ int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, outpu
     }
 
     // TODO: Jack calls restart here, only point of failure, all else are just checks
-
-    return 0;
 }
 
-sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
+sndx_pollfds_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
 {
     int err;
 
@@ -161,6 +160,8 @@ sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, 
             ci    = nfds;
             nfds += p->capt_nfds;
         }
+
+        RANGE(i, nfds) { p->addr[i].events |= POLLERR; }
 
         poll_enter = get_microseconds(); // system time
 
@@ -230,8 +231,15 @@ sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, 
             err = snd_pcm_poll_descriptors_revents(play, &p->addr[0], p->play_nfds, &revents);
             SndRetVal_(err, POLLFD_FATAL, "Failed: snd_pcm_poll_descriptors_revents (play): %s");
             if (revents & POLLNVAL) SndRetVal_(-POLLNVAL, POLLFD_FATAL, "Device disconnected (play): %s");
-            if (revents & POLLERR) { xrun_detected = true; } // Failure
-            if (revents & POLLOUT) { need_playback = 0; }    // Success
+            if (revents & POLLERR)
+            {
+                xrun_detected = true;
+                a_error("playback xrun");
+            } // Failure
+            if (revents & POLLOUT) // NOTE: POLLOUT for playback
+            {
+                need_playback = 0;
+            } // Success
         }
 
         if (need_capture)
@@ -239,8 +247,15 @@ sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, 
             err = snd_pcm_poll_descriptors_revents(capt, &p->addr[ci], p->capt_nfds, &revents);
             SndRetVal_(err, POLLFD_FATAL, "Failed: snd_pcm_poll_descriptors_revents (capt): %s");
             if (revents & POLLNVAL) SndRetVal_(-POLLNVAL, POLLFD_FATAL, "Device disconnected (capt): %s");
-            if (revents & POLLERR) { xrun_detected = true; } // Failure
-            if (revents & POLLOUT) { need_capture = 0; }     // Success
+            if (revents & POLLERR)
+            {
+                xrun_detected = true;
+                a_error("capture xrun");
+            } // Failure
+            if (revents & POLLIN) // NOTE: POLLIN for capture
+            {
+                need_capture = 0;
+            } // Success
         }
     }
 
@@ -256,7 +271,7 @@ sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, 
     return POLLFD_SUCCESS;
 }
 
-sndx_pollfds_poll_error_t sndx_pollfds_avail( //
+sndx_pollfds_error_t sndx_pollfds_avail( //
     sndx_pollfds_t* p,
     snd_pcm_t*      play,
     snd_pcm_t*      capt,

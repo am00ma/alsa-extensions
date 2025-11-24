@@ -47,6 +47,9 @@ typedef struct
 
 } sndx_buffer_t;
 
+/** @brief Given mmapped areas, map them to our dev areas (used by dev_to_buf and buf_to_dev) . */
+void sndx_buffer_mmap_dev_areas(sndx_buffer_t* b, const area_t* areas);
+
 /** @brief Dump buffer params to output. */
 void sndx_dump_buffer(sndx_buffer_t* b, snd_output_t* output);
 

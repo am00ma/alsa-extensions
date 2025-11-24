@@ -65,7 +65,7 @@ typedef enum sndx_pollfds_poll_error_t
     POLLFD_FATAL,
     POLLFD_NEEDS_RESTART,
 
-} sndx_pollfds_poll_error_t;
+} sndx_pollfds_error_t;
 
 /** @brief Do the polling and handle the errors
  *
@@ -81,7 +81,7 @@ typedef enum sndx_pollfds_poll_error_t
  *  Based on that, caller can start xrun recovery and restart
  *
  * */
-sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+sndx_pollfds_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
 
 /** @brief Get minimum of available read/write space
  *
@@ -90,7 +90,7 @@ sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, 
  *      - POLLFD_FATAL
  *      - POLLFD_NEEDS_RESTART
  * */
-sndx_pollfds_poll_error_t sndx_pollfds_avail( //
+sndx_pollfds_error_t sndx_pollfds_avail( //
     sndx_pollfds_t* p,
     snd_pcm_t*      play,
     snd_pcm_t*      capt,
@@ -106,4 +106,4 @@ sndx_pollfds_poll_error_t sndx_pollfds_avail( //
  *  NOTE: user's responsibility to stop and start (restart) the duplex after calling this function
  *
  * */
-int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+void sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);

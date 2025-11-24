@@ -16,10 +16,10 @@ int jack_start(jack_t* j);
 int jack_stop(jack_t* j);
 
 int jack_xrun(jack_t* j);
-int jack_wait(jack_t* j);
+int jack_wait(jack_t* j, sframes_t* avail);
 
-// int jack_read(jack_t* j, uframes_t frames);
-// int jack_write(jack_t* j, uframes_t frames);
+int jack_read(jack_t* j, uframes_t frames);
+int jack_write(jack_t* j, uframes_t frames);
 
 int jack_open(jack_t** jackp, output_t* output)
 {
@@ -41,11 +41,6 @@ int jack_open(jack_t** jackp, output_t* output)
     err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->rate, j->d->period_size, j->d->out);
     SndGoto_(err, __close, "Failed sndx_pollfds_open: %s");
 
-    j->p->period_usecs = (u64)floor((((float)j->d->period_size) / j->d->rate) * 1000000.0f);
-    j->p->poll_timeout = (int)floor(1.5f * j->p->period_usecs);
-    j->p->poll_next    = 0;
-    j->p->poll_last    = 0;
-
     *jackp = j;
 
     return 0;
@@ -58,10 +53,8 @@ __close:
 
 void jack_close(jack_t* j)
 {
-
     sndx_duplex_close(j->d);
     sndx_pollfds_close(j->p);
-
     Free(j);
 }
 
@@ -73,6 +66,7 @@ int jack_start(jack_t* j)
     j->p->poll_last = 0;
     j->p->poll_next = 0;
 
+    // Since we use mmap, we need to start
     err = snd_pcm_prepare(j->d->play);
     SndReturn_(err, "Failed snd_pcm_prepare (play): %s");
 
@@ -83,9 +77,8 @@ int jack_start(jack_t* j)
     }
 
     // Reallocate pfds
-    sndx_pollfds_close(j->p);
-    err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->rate, j->d->period_size, j->d->out);
-    SndReturn_(err, "Failed sndx_pollfds_open: %s");
+    err = sndx_pollfds_reset(j->p, j->d->play, j->d->capt, j->d->out);
+    SndReturn_(err, "Failed sndx_pollfds_reset: %s");
 
     // Fill silence and pcm_start playback (if not linked, also capture)
     // Also starts timer, but maybe we should have a toggle for that
@@ -115,56 +108,17 @@ int jack_stop(jack_t* j)
 /** @brief Reimplementation of alsa_driver_xrun_recovery */
 int jack_xrun(jack_t* j)
 {
-
     int err;
 
     sndx_duplex_t* d      = j->d;
     output_t*      output = d->out;
 
-    status_t* status;
-    snd_pcm_status_alloca(&status);
+    a_error("Starting xrun recovery");
 
-    err = snd_pcm_status(d->capt, status);
-    SndCheck_(err, "status error: %s");
-
-    // Jack only checks capt
-    // err = snd_pcm_status(d->play, status);
-    // SndCheck_(err, "status error: %s");
-
-    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_SUSPENDED)
-    {
-        a_info("**** alsa_pcm: pcm in suspended state, resuming it");
-
-        err = snd_pcm_prepare(d->capt);
-        SndCheck_(err, "error preparing capture after suspend: %s");
-
-        err = snd_pcm_prepare(d->play);
-        SndCheck_(err, "error preparing playback after suspend: %s");
-    }
-
-    if (snd_pcm_status_get_state(status) == SND_PCM_STATE_XRUN)
-    {
-        j->p->xrun_count++;
-
-        struct timeval now, diff, tstamp;
-        snd_pcm_status_get_tstamp(status, &now);
-        snd_pcm_status_get_trigger_tstamp(status, &tstamp);
-
-        timersub(&now, &tstamp, &diff);
-        j->p->delayed_usecs = diff.tv_sec * 1000000.0 + diff.tv_usec;
-        a_info("**** alsa_pcm: xrun of at least %.3f msecs", j->p->delayed_usecs / 1000.0);
-
-        a_info("Repreparing capture");
-        err = snd_pcm_prepare(d->capt);
-        SndCheck_(err, "error preparing capture after xrun: %s");
-
-        a_info("Repreparing playback");
-        err = snd_pcm_prepare(d->play);
-        SndCheck_(err, "error preparing playback after xrun: %s");
-    }
+    // Cannot return error
+    sndx_pollfds_xrun(j->p, j->d->play, j->d->capt, j->d->out);
 
     // Jack calls it restart
-
     err = jack_stop(j);
     SndReturn_(err, "Failed: jack_stop: %s");
 
@@ -174,18 +128,124 @@ int jack_xrun(jack_t* j)
     return 0;
 }
 
-int jack_wait(jack_t* j)
+int jack_wait(jack_t* j, sframes_t* avail)
 {
-    sndx_pollfds_poll_error_t perr;
+    int       err;
+    output_t* output = j->d->out;
+
+    sndx_pollfds_error_t perr;
 
     perr = sndx_pollfds_wait(j->p, j->d->play, j->d->capt, j->d->out);
-
     switch (perr)
     {
     case POLLFD_SUCCESS: break;
-    case POLLFD_FATAL: break;
-    case POLLFD_NEEDS_RESTART: break;
+    case POLLFD_FATAL: RetVal_(perr, -POLLFD_FATAL, "Fatal: Poll failed"); break;
+    case POLLFD_NEEDS_RESTART:
+        err = jack_xrun(j);
+        SndReturn_(err, "Failed xrun recovery: %s");
+        break;
     }
+
+    // Stores value in argument avail
+    perr = sndx_pollfds_avail(j->p, j->d->play, j->d->capt, avail, j->d->out);
+    switch (perr)
+    {
+    case POLLFD_SUCCESS: break;
+    case POLLFD_FATAL: RetVal_(perr, -POLLFD_FATAL, "Fatal: Avail failed"); break;
+    case POLLFD_NEEDS_RESTART:
+        err = jack_xrun(j);
+        SndReturn_(err, "Failed xrun recovery: %s");
+        break;
+    }
+
+    return 0;
+}
+
+int jack_read(jack_t* j, uframes_t nframes)
+{
+    int       err;
+    output_t* output = j->d->out;
+
+    err = -(nframes > j->p->period_size);
+    Return_(err, "Failed: jack_read: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+
+    uframes_t offset       = 0;
+    uframes_t contiguous   = 0;
+    sframes_t nread        = 0;
+    sframes_t orig_nframes = nframes;
+
+    const area_t* areas = j->d->buf_capt->dev;
+
+    while (nframes)
+    {
+        contiguous = nframes;
+
+        // Get address from alsa
+        err = snd_pcm_mmap_begin(j->d->capt, &areas, &offset, &contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
+
+        // Map to device areas
+        sndx_buffer_mmap_dev_areas(j->d->buf_capt, areas);
+
+        // Copy to float buffer
+        sndx_buffer_dev_to_buf(j->d->buf_capt, offset, contiguous);
+
+        // Commit to move to next batch
+        err = snd_pcm_mmap_commit(j->d->capt, offset, contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
+
+        nframes -= contiguous;
+        nread   += contiguous;
+    }
+
+    err = -(nread != orig_nframes);
+    Return_(err, "Failed: jack_read: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+
+    return 0;
+}
+
+int jack_write(jack_t* j, uframes_t nframes)
+{
+    int       err;
+    output_t* output = j->d->out;
+
+    err = nframes > j->p->period_size;
+    Return_(err, "Failed: jack_write: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+
+    uframes_t offset       = 0;
+    uframes_t contiguous   = 0;
+    sframes_t nwritten     = 0;
+    sframes_t orig_nframes = nframes;
+
+    const area_t* areas = j->d->buf_play->dev;
+
+    while (nframes)
+    {
+        contiguous = nframes;
+
+        // Get address from alsa
+        err = snd_pcm_mmap_begin(j->d->play, &areas, &offset, &contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
+
+        // Map to device areas
+        sndx_buffer_mmap_dev_areas(j->d->buf_play, areas);
+
+        // Copy to float buffer
+        sndx_buffer_buf_to_dev(j->d->buf_play, offset, contiguous);
+
+        // TODO: silence untouched
+
+        // Commit to move to next batch
+        err = snd_pcm_mmap_commit(j->d->play, offset, contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
+
+        nframes  -= contiguous;
+        nwritten += contiguous;
+    }
+
+    err = -(nwritten != orig_nframes);
+    Return_(err, "Failed: jack_read: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+
     return 0;
 }
 
@@ -204,10 +264,38 @@ int main()
     err = jack_start(j);
     SndFatal_(err, "Failed jack_start: %s");
 
+    sframes_t frames = 0;
+    sframes_t tries  = 0;
+    while (frames < j->d->rate && tries < 10)
+    {
+        sframes_t avail = 0;
+
+        err = jack_wait(j, &avail);
+        SndFatal_(err, "Failed jack_wait: %s");
+
+        frames += avail;
+
+        j->d->timer->frames_capt += avail;
+
+        err = jack_read(j, avail);
+        SndFatal_(err, "Failed jack_read: %s");
+
+        // Callback
+
+        err = jack_write(j, avail);
+        SndFatal_(err, "Failed jack_write: %s");
+
+        j->d->timer->frames_play += avail;
+
+        tries += 1;
+    }
+
     err = jack_stop(j);
     SndFatal_(err, "Failed jack_stop: %s");
 
     jack_close(j);
 
     snd_output_close(output);
+
+    return 0;
 }

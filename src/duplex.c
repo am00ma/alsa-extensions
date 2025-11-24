@@ -211,7 +211,7 @@ int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d)
     RANGE(i, d->periods)
     {
         err = snd_pcm_writei(d->play, buf, d->period_size);
-        SndGoto_(err, __error, "Failed: snd_pcm_mmap_begin: %s");
+        SndGoto_(err, __error, "Failed: snd_pcm_writei: %s");
     }
     a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", //
            d->period_size * d->periods, d->period_size, d->periods);

@@ -121,6 +121,11 @@ __close:
     return err;
 }
 
+void sndx_buffer_mmap_dev_areas(sndx_buffer_t* b, const area_t* areas)
+{
+    RANGE(chn, b->channels) { b->dev[chn] = areas[chn]; }
+}
+
 void sndx_buffer_close(sndx_buffer_t* b)
 {
     if (!b) return;
