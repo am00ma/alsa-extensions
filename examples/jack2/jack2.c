@@ -1,5 +1,6 @@
 #include "duplex.h"
 #include "pollfds.h"
+#include <alsa/asoundlib.h>
 
 typedef struct
 {
@@ -187,7 +188,7 @@ int jack_read(jack_t* j, uframes_t nframes)
         // Map to device areas
         sndx_buffer_mmap_dev_areas(j->d->buf_capt, areas);
 
-        // Copy to float buffer
+        // Copy from device areas to float buffer
         sndx_buffer_dev_to_buf(j->d->buf_capt, nread, contiguous);
 
         // Commit to move to next batch
@@ -199,7 +200,7 @@ int jack_read(jack_t* j, uframes_t nframes)
     }
 
     err = -(nread != orig_nframes);
-    Return_(err, "Failed: jack_read: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+    Return_(err, "Failed: jack_read: nread != orig_nframes : %ld != %ld", nread, orig_nframes);
 
     return 0;
 }
@@ -230,7 +231,7 @@ int jack_write(jack_t* j, uframes_t nframes)
         // Map to device areas
         sndx_buffer_mmap_dev_areas(j->d->buf_play, areas);
 
-        // Copy to float buffer
+        // Copy from float buffer to device areas
         sndx_buffer_buf_to_dev(j->d->buf_play, nwritten, contiguous);
 
         // TODO: silence untouched
@@ -244,7 +245,7 @@ int jack_write(jack_t* j, uframes_t nframes)
     }
 
     err = -(nwritten != orig_nframes);
-    Return_(err, "Failed: jack_read: nframes > j->p->period_size : %ld > %ld", nframes, j->p->period_size);
+    Return_(err, "Failed: jack_write: nwritten != orig_nframes : %ld != %ld", nwritten, orig_nframes);
 
     return 0;
 }
