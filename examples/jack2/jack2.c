@@ -38,7 +38,7 @@ int jack_open(jack_t** jackp, output_t* output)
         output);
     SndGoto_(err, __close, "Failed sndx_duplex_open: %s");
 
-    err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->out);
+    err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->rate, j->d->period_size, j->d->out);
     SndGoto_(err, __close, "Failed sndx_pollfds_open: %s");
 
     j->p->period_usecs = (u64)floor((((float)j->d->period_size) / j->d->rate) * 1000000.0f);
@@ -84,7 +84,7 @@ int jack_start(jack_t* j)
 
     // Reallocate pfds
     sndx_pollfds_close(j->p);
-    err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->out);
+    err = sndx_pollfds_open(&j->p, j->d->play, j->d->capt, j->d->rate, j->d->period_size, j->d->out);
     SndReturn_(err, "Failed sndx_pollfds_open: %s");
 
     // Fill silence and pcm_start playback (if not linked, also capture)

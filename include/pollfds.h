@@ -24,25 +24,34 @@ typedef struct pollfd pfd_t;
 typedef struct sndx_pollfds_t
 {
 
-    pfd_t* addr;
-    u32    play_nfds;
-    u32    capt_nfds;
+    pfd_t* addr;      ///< Allocated on open and reallocated on restart
+    u32    play_nfds; ///< Number of playback fds
+    u32    capt_nfds; ///< Number of capture fds
 
-    u64 poll_next;
-    u64 poll_last;
-    u64 poll_late;
-    u64 poll_timeout;
+    u32 rate;        ///< Necessary for period_usecs calculation
+    u64 period_size; ///< Necessary for period_usecs, avail calculation
 
-    u64 period_usecs;
-    u64 delayed_usecs;
-    u64 last_wait_ust;
-    u32 xrun_count;
-    u32 retry_count;
+    u64 poll_next;    ///< Expected time of next poll
+    u64 poll_last;    ///< Recorded time of last poll
+    u64 poll_late;    ///< Was it late?
+    u64 poll_timeout; ///< Used in poll(..., poll_timeout)
+
+    u64 period_usecs;  ///< period in usecs
+    u64 delayed_usecs; ///< delay in usecs
+    u64 last_wait_ust; ///< timestamp of last wait in usecs
+    u32 xrun_count;    ///< Number of xruns
+    u32 retry_count;   ///< Number of poll(...) retries if poll_ret == 0
 
 } sndx_pollfds_t;
 
 /** @brief Allocate memory and init stats for struct pollfds */
-int sndx_pollfds_open(sndx_pollfds_t** pfdsp, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
+int sndx_pollfds_open( //
+    sndx_pollfds_t** pfdsp,
+    snd_pcm_t*       play,
+    snd_pcm_t*       capt,
+    u32              rate,
+    u64              period_size,
+    snd_output_t*    output);
 
 /** @brief Free memory from struct pollfds, free p itself */
 void sndx_pollfds_close(sndx_pollfds_t* p);
@@ -62,38 +71,39 @@ typedef enum sndx_pollfds_poll_error_t
  *
  *  Problem: Needs `sndx_pollfds_xrun`, but that depends on `duplex_start`, `duplex_stop`
  *
- *  Example usage:
+ *  TODO: example usage
  *
- *  ```c
- *    int       err   = 0;
- *    uframes_t avail = 0;
+ *  Returns one of 3 values:
+ *      - POLLFD_SUCCESS
+ *      - POLLFD_FATAL
+ *      - POLLFD_NEEDS_RESTART
  *
- *    __retry:
- *
- *        err = sndx_pollfds_poll(p, play, capt, output);
- *        SndReturn_(err, "Failed: sndx_pollfds_poll: %s");
- *
- *        err = sndx_pollfds_avail(p, play, capt, &avail, output);
- *        SndReturn_(err, "Failed: sndx_pollfds_avail: %s");
- *
- *        Assert(avail != 0);
- *
- *        // Unexpected but not error
- *        if (avail != period_size)
- *            a_info("avail != period_size (%d != %d)", avail, period_size);
- *
- *        // All good here on to read (mmap_begin)
- *  ```
+ *  Based on that, caller can start xrun recovery and restart
  *
  * */
-int sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+sndx_pollfds_poll_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
 
-/** @brief Get minimum of available read/write space */
-int sndx_pollfds_avail(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+/** @brief Get minimum of available read/write space
+ *
+ *  Returns one of 3 values:
+ *      - POLLFD_SUCCESS
+ *      - POLLFD_FATAL
+ *      - POLLFD_NEEDS_RESTART
+ * */
+sndx_pollfds_poll_error_t sndx_pollfds_avail( //
+    sndx_pollfds_t* p,
+    snd_pcm_t*      play,
+    snd_pcm_t*      capt,
+    sframes_t*      avail,
+    output_t*       output);
 
-/** @brief Handle xrun, including stopping and starting again
+/** @brief Handle xrun, (drop, prepare)
  *
  *  Problem: We need duplex_start and duplex_stop here
+ *           even if we can drop, prepare again,
+ *           to fill silence we need all the params including format, channels, ...
+ *
+ *  NOTE: user's responsibility to stop and start (restart) the duplex after calling this function
  *
  * */
 int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
