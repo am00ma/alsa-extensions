@@ -56,6 +56,7 @@ __close:
 
 void jack_close(jack_t* j)
 {
+    if (!j) return;
     sndx_duplex_close(j->d);
     sndx_pollfds_close(j->p);
     Free(j);
@@ -261,14 +262,14 @@ int main()
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
     err = sndx_duplex_set_schduler(output);
-    SndGoto_(err, __close, "Failed sndx_duplex_set_schduler: %s");
+    SndCheck_(err, "Failed sndx_duplex_set_schduler: %s");
 
     jack_t* j;
     err = jack_open(&j, output);
-    SndFatal_(err, "Failed jack_open: %s");
+    SndGoto_(err, __close, "Failed jack_open: %s");
 
     err = jack_start(j);
-    SndFatal_(err, "Failed jack_start: %s");
+    SndGoto_(err, __close, "Failed jack_start: %s");
 
     sframes_t frames = 0;
     while (frames < j->d->rate * 10)
@@ -276,42 +277,39 @@ int main()
         sframes_t avail = 0;
 
         err = jack_wait(j, &avail);
-        SndFatal_(err, "Failed jack_wait: %s");
+        SndGoto_(err, __close, "Failed jack_wait: %s");
 
         frames += avail;
 
         j->d->timer->frames_capt += avail;
 
         err = jack_read(j, avail);
-        SndFatal_(err, "Failed jack_read: %s");
+        SndGoto_(err, __close, "Failed jack_read: %s");
 
         // Copy soft buffer
-        isize pos_play, pos_capt;
         RANGE(chn, j->d->ch_play)
         RANGE(i, avail)
         {
-            pos_play = i + chn * j->d->buf_play->frames;
-            pos_capt = i;
-
-            j->d->buf_play->bufdata[pos_play] = j->d->buf_capt->bufdata[pos_capt];
+            j->d->buf_play->bufdata[i + chn * j->d->buf_play->frames] = //
+                j->d->buf_capt->bufdata[i];
         }
 
         err = jack_write(j, avail);
-        SndFatal_(err, "Failed jack_write: %s");
+        SndGoto_(err, __close, "Failed jack_write: %s");
 
         j->d->timer->frames_play += avail;
     }
 
     err = jack_stop(j);
-    SndFatal_(err, "Failed jack_stop: %s");
+    SndGoto_(err, __close, "Failed jack_stop: %s");
 
     jack_close(j);
-
     snd_output_close(output);
 
     return 0;
 
 __close:
+    jack_close(j);
     snd_output_close(output);
     return EXIT_FAILURE;
 }
