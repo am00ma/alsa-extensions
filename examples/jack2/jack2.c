@@ -1,6 +1,8 @@
 #include "duplex.h"
 #include "pollfds.h"
+#include "types.h"
 #include <alsa/asoundlib.h>
+#include <stdlib.h>
 
 typedef struct
 {
@@ -258,6 +260,9 @@ int main()
     err = snd_output_stdio_attach(&output, stderr, 0);
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
+    err = sndx_duplex_set_schduler(output);
+    SndGoto_(err, __close, "Failed sndx_duplex_set_schduler: %s");
+
     jack_t* j;
     err = jack_open(&j, output);
     SndFatal_(err, "Failed jack_open: %s");
@@ -305,4 +310,8 @@ int main()
     snd_output_close(output);
 
     return 0;
+
+__close:
+    snd_output_close(output);
+    return EXIT_FAILURE;
 }

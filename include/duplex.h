@@ -154,4 +154,4 @@ int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d);
 int sndx_duplex_write_mmap_initial_silence(sndx_duplex_t* d);
 int sndx_duplex_write_mmap_initial_silence_direct(sndx_duplex_t* d);
 
-int sndx_duplex_set_schduler(sndx_duplex_t* d);
+int sndx_duplex_set_schduler(output_t* output);

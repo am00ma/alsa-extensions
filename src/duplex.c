@@ -387,10 +387,9 @@ sframes_t sndx_duplex_write( //
     return *frames;
 }
 
-int sndx_duplex_set_schduler(sndx_duplex_t* d)
+int sndx_duplex_set_schduler(output_t* output)
 {
-    int       err;
-    output_t* output = d->out;
+    int err;
 
     struct sched_param sched_param;
     int                policy  = SCHED_FIFO;
