@@ -150,7 +150,7 @@ int jack_wait(jack_t* j, sframes_t* avail)
         break;
     }
 
-    // // Trying with alsa wait
+    // // Trying with alsa wait -> same behaviour
     // snd_pcm_wait(j->d->capt, 1000);
 
     // Stores value in argument avail

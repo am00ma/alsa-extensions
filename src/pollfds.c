@@ -144,10 +144,10 @@ sndx_pollfds_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_p
     // Keeping track of retry count here as opposed to jack
     if (p->retry_count != 0) a_info("Wait: retrying: %d", p->retry_count);
 
-    i64 count = 0;
+    // i64 count = 0;
     while ((need_playback || need_capture) && !xrun_detected)
     {
-        print_(count);
+        // print_(count);
 
         u32 nfds = 0;
         u32 ci   = 0;
@@ -262,7 +262,7 @@ sndx_pollfds_error_t sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_p
             } // Success
         }
 
-        count++;
+        // count++;
     }
 
     // NOTE: Request restart instead, we are now tracking retry_count within p
