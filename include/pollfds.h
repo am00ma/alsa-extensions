@@ -37,20 +37,18 @@ typedef struct sndx_pollfds_t
     u64 delayed_usecs;
     u64 last_wait_ust;
     u32 xrun_count;
+    u32 retry_count;
 
 } sndx_pollfds_t;
 
 /** @brief Allocate memory and init stats for struct pollfds */
 int sndx_pollfds_open(sndx_pollfds_t** pfdsp, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
 
-/** @brief Reset only poll fds memory, keeping stats */
-int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
+/** @brief Free memory from struct pollfds, free p itself */
+void sndx_pollfds_close(sndx_pollfds_t* p);
 
-/** @brief Free and reallocate memory for struct pollfds */
+/** @brief Only reallocate poll fds memory, keeping stats the same, recounting poll descriptors */
 int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
-
-/** @brief Free memory from struct pollfds */
-void sndx_pollfds_close(sndx_pollfds_t* pfdsp);
 
 typedef enum sndx_pollfds_poll_error_t
 {
@@ -62,7 +60,7 @@ typedef enum sndx_pollfds_poll_error_t
 
 /** @brief Do the polling and handle the errors
  *
- *  Return value is indicated in both status as well as the return value
+ *  Problem: Needs `sndx_pollfds_xrun`, but that depends on `duplex_start`, `duplex_stop`
  *
  *  Example usage:
  *
@@ -87,14 +85,15 @@ typedef enum sndx_pollfds_poll_error_t
  *        // All good here on to read (mmap_begin)
  *  ```
  *
- *
- *
  * */
 int sndx_pollfds_wait(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
 
+/** @brief Get minimum of available read/write space */
+int sndx_pollfds_avail(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
+
 /** @brief Handle xrun, including stopping and starting again
  *
- *  Return value is indicated in both status as well as the return value
+ *  Problem: We need duplex_start and duplex_stop here
  *
  * */
 int sndx_pollfds_xrun(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
