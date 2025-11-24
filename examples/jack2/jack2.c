@@ -36,7 +36,7 @@ int jack_open(jack_t** jackp, output_t* output)
         &j->d,                           //
         "hw:A96,0", "hw:A96,0",          //
         SND_PCM_FORMAT_S32_LE,           //
-        48000, 1024, 2,                  //
+        48000, 2048 * 4, 2,              //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
     SndGoto_(err, __close, "Failed sndx_duplex_open: %s");
@@ -192,7 +192,7 @@ int jack_read(jack_t* j, uframes_t nframes)
         sndx_buffer_mmap_dev_areas(j->d->buf_capt, areas);
 
         // Copy from device areas to float buffer
-        sndx_buffer_dev_to_buf(j->d->buf_capt, nread, contiguous);
+        sndx_buffer_dev_to_buf(j->d->buf_capt, offset, contiguous);
 
         // Commit to move to next batch
         err = snd_pcm_mmap_commit(j->d->capt, offset, contiguous);
@@ -235,7 +235,7 @@ int jack_write(jack_t* j, uframes_t nframes)
         sndx_buffer_mmap_dev_areas(j->d->buf_play, areas);
 
         // Copy from float buffer to device areas
-        sndx_buffer_buf_to_dev(j->d->buf_play, nwritten, contiguous);
+        sndx_buffer_buf_to_dev(j->d->buf_play, offset, contiguous);
 
         // TODO: silence untouched
 

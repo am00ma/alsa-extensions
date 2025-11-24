@@ -23,7 +23,8 @@ int sndx_pollfds_open( //
     p->period_size = period_size;
 
     p->period_usecs = (u64)floor((((float)p->period_size) / p->rate) * 1000000.0f);
-    p->poll_timeout = (int)floor(1.5f * p->period_usecs);
+    // p->poll_timeout = (int)floor(1.5f * p->period_usecs);
+    p->poll_timeout = 1000;
 
     p->play_nfds = snd_pcm_poll_descriptors_count(play);
     p->capt_nfds = snd_pcm_poll_descriptors_count(capt);
