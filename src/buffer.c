@@ -126,8 +126,8 @@ void sndx_buffer_mmap_dev_areas(sndx_buffer_t* b, const area_t* areas)
     RANGE(chn, b->channels)
     {
         b->dev[chn].addr  = areas[chn].addr;
-        b->dev[chn].first = b->bytes * 8 * chn;
-        b->dev[chn].step  = b->bytes * 8 * b->channels;
+        b->dev[chn].first = areas[chn].first;
+        b->dev[chn].step  = areas[chn].step;
     }
 }
 
