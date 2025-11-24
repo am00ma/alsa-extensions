@@ -150,6 +150,9 @@ int jack_wait(jack_t* j, sframes_t* avail)
         break;
     }
 
+    // // Trying with alsa wait
+    // snd_pcm_wait(j->d->capt, 1000);
+
     // Stores value in argument avail
     perr = sndx_pollfds_avail(j->p, j->d->play, j->d->capt, avail, j->d->out);
     switch (perr)
