@@ -61,7 +61,7 @@ void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames
     }
 }
 
-int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output)
+int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, output_t* output)
 {
     int err;
 

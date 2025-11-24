@@ -57,7 +57,7 @@ typedef struct sndx_duplex_t
 } sndx_duplex_t;
 
 /** @brief Dump duplex params to output. */
-void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output);
+void sndx_dump_duplex(sndx_duplex_t* d, output_t* output);
 
 /** @brief Dump duplex status to output. */
 void sndx_dump_duplex_status(sndx_duplex_t* d, output_t* output);
@@ -86,7 +86,7 @@ int sndx_duplex_open(                //
     uframes_t       period_size,     //
     u32             periods,         //
     access_t        _access,         //
-    snd_output_t*   output);
+    output_t*       output);
 
 /** @brief Close playback and capture handles.
  *
@@ -153,3 +153,5 @@ sframes_t sndx_duplex_write( //
 int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d);
 int sndx_duplex_write_mmap_initial_silence(sndx_duplex_t* d);
 int sndx_duplex_write_mmap_initial_silence_direct(sndx_duplex_t* d);
+
+int sndx_duplex_set_schduler(sndx_duplex_t* d);

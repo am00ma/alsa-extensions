@@ -33,7 +33,7 @@ typedef struct
 } sndx_params_t;
 
 /** @brief Dump params to output. */
-void sndx_dump_params(sndx_params_t* params, snd_output_t* output);
+void sndx_dump_params(sndx_params_t* params, output_t* output);
 
 /** @brief Set buffer size specifically based on typical latency requirements specified in `spcm` */
 int sndx_set_buffer_size(snd_spcm_latency_t latency, uframes_t* buffer_size);

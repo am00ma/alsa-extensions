@@ -1,6 +1,6 @@
 #include "duplex.h"
 #include "params.h"
-#include <alsa/asoundlib.h>
+#include <sched.h>
 
 static sndx_params_t default_params = {
     .channels    = 2,
@@ -11,7 +11,7 @@ static sndx_params_t default_params = {
     .period_size = 128,
 };
 
-void sndx_dump_duplex(sndx_duplex_t* d, snd_output_t* output)
+void sndx_dump_duplex(sndx_duplex_t* d, output_t* output)
 {
     a_title("duplex:");
     a_info("  ch_play    : %d", d->ch_play);
@@ -173,9 +173,8 @@ int sndx_duplex_close(sndx_duplex_t* d)
 {
     if (!d) return 0;
 
-    int err;
-
-    snd_output_t* output = d->out;
+    int       err;
+    output_t* output = d->out;
 
     if (d->capt)
     {
@@ -386,4 +385,29 @@ sframes_t sndx_duplex_write( //
     sndx_buffer_buf_to_dev(d->buf_play, *offset, *frames);
 
     return *frames;
+}
+
+int sndx_duplex_set_schduler(sndx_duplex_t* d)
+{
+    int       err;
+    output_t* output = d->out;
+
+    struct sched_param sched_param;
+    int                policy  = SCHED_FIFO;
+    const char*        spolicy = "FIFO";
+
+    err = sched_getparam(0, &sched_param);
+    SysReturn_(err, "Failed: sched_getparam: %s");
+
+    sched_param.sched_priority = sched_get_priority_max(policy);
+
+    err = sched_setscheduler(0, policy, &sched_param);
+    RetVal_(err, -1,                                           //
+            "Failed: sched_setscheduler: %s with priority %i", //
+            spolicy, sched_param.sched_priority);
+
+    a_info("Scheduler set to %s with priority %i...", //
+           spolicy, sched_param.sched_priority);
+
+    return 0;
 }

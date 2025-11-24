@@ -1,6 +1,6 @@
 #include "xrun.h"
 
-int sndx_xrun_recovery_alsalib(snd_pcm_t* pcm, int err, snd_output_t* output)
+int sndx_xrun_recovery_alsalib(snd_pcm_t* pcm, int err, output_t* output)
 {
     a_error("xrun recovery");
     if (err == -EPIPE)

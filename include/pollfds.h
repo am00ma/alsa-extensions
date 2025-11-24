@@ -51,13 +51,13 @@ int sndx_pollfds_open( //
     snd_pcm_t*       capt,
     u32              rate,
     u64              period_size,
-    snd_output_t*    output);
+    output_t*        output);
 
 /** @brief Free memory from struct pollfds, free p itself */
 void sndx_pollfds_close(sndx_pollfds_t* p);
 
 /** @brief Only reallocate poll fds memory, keeping stats the same, recounting poll descriptors */
-int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output);
+int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output);
 
 typedef enum sndx_pollfds_poll_error_t
 {

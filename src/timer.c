@@ -130,7 +130,7 @@ int sndx_hstats_enable( //
     u32            rate,
     tstamp_type_t  type,
     bool           do_delay,
-    snd_output_t*  output)
+    output_t*      output)
 {
     int err;
 
@@ -223,7 +223,7 @@ int sndx_hstats_update(sndx_hstats_t* t, snd_pcm_t* handle, uframes_t frames_pro
 }
 
 /** @brief Print report of current snapshot and print difference in sys and snd time */
-void sndx_dump_hstats(sndx_hstats_t* t, int adjust_factor, snd_output_t* output)
+void sndx_dump_hstats(sndx_hstats_t* t, int adjust_factor, output_t* output)
 {
     /* adjust_factor:
      *      Capture :  read plus queued : adjust_factor = +1

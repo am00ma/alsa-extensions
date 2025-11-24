@@ -9,7 +9,7 @@ int sndx_pollfds_open( //
     snd_pcm_t*       capt,
     u32              rate,
     u64              period_size,
-    snd_output_t*    output)
+    output_t*        output)
 {
     int err;
 
@@ -50,7 +50,7 @@ void sndx_pollfds_close(sndx_pollfds_t* p)
     Free(p);
 }
 
-int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, snd_output_t* output)
+int sndx_pollfds_reset(sndx_pollfds_t* p, snd_pcm_t* play, snd_pcm_t* capt, output_t* output)
 {
     if (!p) return -1; // NOTE: Silently returns err
 

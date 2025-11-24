@@ -51,13 +51,13 @@ typedef struct
 void sndx_buffer_mmap_dev_areas(sndx_buffer_t* b, const area_t* areas);
 
 /** @brief Dump buffer params to output. */
-void sndx_dump_buffer(sndx_buffer_t* b, snd_output_t* output);
+void sndx_dump_buffer(sndx_buffer_t* b, output_t* output);
 
 /** @brief Dump buffer areas to output. */
-void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, snd_output_t* output);
+void sndx_dump_buffer_areas(sndx_buffer_t* b, uframes_t offset, uframes_t frames, output_t* output);
 
 /** @brief Allocate memory for the backing buffer and set up channel areas. */
-int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, snd_output_t* output);
+int sndx_buffer_open(sndx_buffer_t** bufp, format_t format, u32 channels, uframes_t frames, output_t* output);
 
 /** @brief Free memory from the backing buffer. */
 void sndx_buffer_close(sndx_buffer_t* b);
