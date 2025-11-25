@@ -10,6 +10,7 @@
 #pragma once
 
 #include "buffer.h"
+#include "pollfds.h"
 #include "timer.h"
 
 /** @brief Analogue of `snd_pcm_t` that manages pcm handles, buffers, polling, timing.
@@ -49,6 +50,8 @@ typedef struct sndx_duplex_t
 
     sndx_buffer_t* buf_play; ///< Connects float buffer to playback device area, used by write
     sndx_buffer_t* buf_capt; ///< Connects float buffer to capture device area, used by read
+
+    sndx_pollfds_t* pfd; ///< Handle polling (substitute for `snd_pcm_wait` for multiple handles)
 
     sndx_timer_t* timer; ///< Measure and report latency
 
@@ -105,7 +108,7 @@ int sndx_duplex_open(                //
  */
 int sndx_duplex_close(sndx_duplex_t* d);
 
-/** @brief Start playback and capture
+/** @brief Start playback and capture.
  *
  *  Process:
  *      1. Fill playback with silence
@@ -116,7 +119,7 @@ int sndx_duplex_close(sndx_duplex_t* d);
  */
 int sndx_duplex_start(sndx_duplex_t* d);
 
-/** @brief Stop playback and capture
+/** @brief Stop playback and capture.
  *
  *  Process:
  *      1. Fill playback with silence
@@ -127,7 +130,7 @@ int sndx_duplex_start(sndx_duplex_t* d);
  */
 int sndx_duplex_stop(sndx_duplex_t* d);
 
-/** @brief Read from device to buffer
+/** @brief Read from device to float buffer.
  *
  * Read from device to buffer, converting to float format
  */
@@ -136,7 +139,7 @@ sframes_t sndx_duplex_read( //
     uframes_t*     offset,
     uframes_t*     frames);
 
-/** @brief Write from buffer to device
+/** @brief Write from float buffer to device.
  *
  *
  * Write from buffer to device, converting from float to device format
@@ -146,12 +149,14 @@ sframes_t sndx_duplex_write( //
     uframes_t*     offset,
     uframes_t*     frames);
 
-/** @brief Write initial silence to get the playback device started.
- *
- * Usually set to `period_size * nperiods`.
- */
+/** @brief Write initial silence when access is RW_INTERLEAVED. Usually set to `period_size * nperiods`. */
 int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d);
+
+/** @brief Write initial silence when access is MMAP_INTERLEAVED. Usually set to `period_size * nperiods`. */
 int sndx_duplex_write_mmap_initial_silence(sndx_duplex_t* d);
+
+/** @brief Write initial silence when access is MMAP_INTERLEAVED, but using mmap_readi/mmap_writei. Usually set to `period_size * nperiods`. */
 int sndx_duplex_write_mmap_initial_silence_direct(sndx_duplex_t* d);
 
+/** @brief Set linux scheduler to FIFO. Needs sudo. */
 int sndx_duplex_set_schduler(output_t* output);

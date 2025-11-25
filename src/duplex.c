@@ -161,6 +161,9 @@ int sndx_duplex_open(                //
     err      = -(!d->timer);
     Goto_(err, __close, "Failed: calloc(timer)"); // can only fail cause of memory
 
+    err = sndx_pollfds_open(&d->pfd, d->play, d->capt, d->rate, d->period_size, d->out);
+    SndGoto_(err, __close, "Failed sndx_pollfds_open: %s");
+
     *duplexp = d;
 
     return 0;
@@ -191,6 +194,7 @@ int sndx_duplex_close(sndx_duplex_t* d)
         SndReturn_(err, "Failed: snd_pcm_close: %s");
     }
 
+    sndx_pollfds_close(d->pfd);
     sndx_buffer_close(d->buf_capt);
     sndx_buffer_close(d->buf_play);
 
