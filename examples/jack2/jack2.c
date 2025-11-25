@@ -1,8 +1,5 @@
 #include "duplex.h"
 #include "pollfds.h"
-#include "types.h"
-#include <alsa/asoundlib.h>
-#include <stdlib.h>
 
 typedef struct
 {
