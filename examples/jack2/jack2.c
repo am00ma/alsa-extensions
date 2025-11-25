@@ -36,7 +36,7 @@ int jack_open(jack_t** jackp, output_t* output)
         &j->d,                           //
         "hw:A96,0", "hw:A96,0",          //
         SND_PCM_FORMAT_S32_LE,           //
-        48000, 2048 * 4, 2,              //
+        48000, 128, 2,                   //
         SND_PCM_ACCESS_MMAP_INTERLEAVED, //
         output);
     SndGoto_(err, __close, "Failed sndx_duplex_open: %s");
@@ -275,6 +275,7 @@ int main()
     SndGoto_(err, __close, "Failed jack_start: %s");
 
     sframes_t frames = 0;
+    sframes_t offset = 0;
     while (frames < j->d->rate * 10)
     {
         sframes_t avail = 0;
@@ -291,11 +292,13 @@ int main()
 
         // Copy soft buffer
         RANGE(chn, j->d->ch_play)
-        RANGE(i, avail)
+        RANGE(i, offset, (isize)(offset + avail))
         {
             j->d->buf_play->bufdata[i + chn * j->d->buf_play->frames] = //
                 j->d->buf_capt->bufdata[i];
         }
+        offset += avail;
+        offset  = offset % (j->d->period_size * j->d->periods);
 
         err = jack_write(j, avail);
         SndGoto_(err, __close, "Failed jack_write: %s");

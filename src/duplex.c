@@ -106,7 +106,10 @@ int sndx_duplex_open(                //
     Goto_(err, __close, "Failed: params check");
 
     err = snd_pcm_nonblock(d->play, 0);
-    SndReturn_(err, "Failed: snd_pcm_nonblock: %s");
+    SndReturn_(err, "Failed: snd_pcm_nonblock (play): %s");
+
+    err = snd_pcm_nonblock(d->capt, 0);
+    SndReturn_(err, "Failed: snd_pcm_nonblock (capt): %s");
 
     err = sndx_set_params(        //
         d->capt,                  //

@@ -45,21 +45,22 @@ int main()
         // NOTE: No longer copying twice
         sframes_t capt_avail = snd_pcm_avail_update(d->capt);
         SndGoto_(capt_avail, __close, "Failed: snd_pcm_avail_update (capt): %s");
-        print_(capt_avail);
 
-        sframes_t play_avail = snd_pcm_avail_update(d->capt);
+        sframes_t play_avail = snd_pcm_avail_update(d->play);
         SndGoto_(play_avail, __close, "Failed: snd_pcm_avail_update (play): %s");
-        print_(play_avail);
+
+        err = -(play_avail < (i64)d->period_size);
+        Goto_(err, __close, "Failed: play_avail < (i64)d->period_size (play): %ld < %ld", play_avail, d->period_size);
+
+        err = -(capt_avail < (i64)d->period_size);
+        Goto_(err, __close, "Failed: capt_avail < (i64)d->period_size (capt): %ld < %ld", capt_avail, d->period_size);
 
         const area_t* capt_areas = d->buf_capt->dev;
 
         sframes_t nframes = d->period_size;
 
-        uframes_t offset       = 0;
-        uframes_t contiguous   = 0;
-        sframes_t nread        = 0;
-        sframes_t nwritten     = 0;
-        sframes_t orig_nframes = nframes;
+        uframes_t offset     = 0;
+        uframes_t contiguous = 0;
 
         while (nframes)
         {
@@ -81,15 +82,12 @@ int main()
 
             d->timer->frames_capt += contiguous;
             nframes               -= contiguous;
-            nread                 += contiguous;
         }
-
-        a_info("Read : %ld of %ld", nread, orig_nframes);
 
         // Copy soft buffer
         isize pos_play, pos_capt;
         RANGE(chn, d->ch_play)
-        RANGE(i, (isize)contiguous)
+        RANGE(i, offset, (isize)(offset + contiguous))
         {
             pos_play = i + chn * d->buf_play->frames;
             pos_capt = i;
@@ -126,10 +124,7 @@ int main()
 
             d->timer->frames_play += contiguous;
             nframes               -= contiguous;
-            nwritten              += contiguous;
         }
-
-        a_info("Wrote: %ld of %ld", nwritten, orig_nframes);
     }
 
 __close:
