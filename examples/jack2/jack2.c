@@ -287,7 +287,7 @@ int main()
         err = jack_read(j, avail);
         SndGoto_(err, __close, "Failed jack_read: %s");
 
-        // Copy soft buffer
+        // TODO: Copy soft buffer - need to take care of wraparound!
         RANGE(chn, j->d->ch_play)
         RANGE(i, offset, (isize)(offset + avail))
         {

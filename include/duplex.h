@@ -132,22 +132,23 @@ int sndx_duplex_stop(sndx_duplex_t* d);
 
 /** @brief Read from device to float buffer.
  *
- * Read from device to buffer, converting to float format
+ *  Steps:
+ *      1. snd_mmap_begin
+ *      2. sndx_mmap_dev_areas
+ *      3. sndx_buf_to_dev
+ *      4. snd_mmap_commit
  */
-sframes_t sndx_duplex_read( //
-    sndx_duplex_t* d,
-    uframes_t*     offset,
-    uframes_t*     frames);
+int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames);
 
 /** @brief Write from float buffer to device.
  *
- *
- * Write from buffer to device, converting from float to device format
+ *  Steps:
+ *      1. snd_mmap_begin
+ *      2. sndx_mmap_dev_areas
+ *      3. sndx_buf_to_dev
+ *      4. snd_mmap_commit
  */
-sframes_t sndx_duplex_write( //
-    sndx_duplex_t* d,
-    uframes_t*     offset,
-    uframes_t*     frames);
+int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames);
 
 /** @brief Write initial silence when access is RW_INTERLEAVED. Usually set to `period_size * nperiods`. */
 int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d);

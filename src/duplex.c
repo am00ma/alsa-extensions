@@ -371,27 +371,97 @@ int sndx_duplex_stop(sndx_duplex_t* d)
     return 0;
 }
 
-sframes_t sndx_duplex_read( //
-    sndx_duplex_t* d,
-    uframes_t*     offset,
-    uframes_t*     frames)
+int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
 {
+    int       err;
+    output_t* output = d->out;
 
-    // After read, copy to soft buffer as float
-    sndx_buffer_dev_to_buf(d->buf_capt, *offset, *frames);
+    err = -(*frames > d->period_size);
+    Return_(err, "Failed: sndx_duplex_read: frames > period_size : %ld > %ld", *frames, d->period_size);
 
-    return *frames;
+    uframes_t hwoffset = 0;
+    uframes_t hwframes = *frames;
+
+    uframes_t contiguous   = 0;
+    sframes_t nread        = 0;
+    sframes_t orig_nframes = *frames;
+
+    const area_t* areas = d->buf_capt->dev;
+
+    while (hwframes)
+    {
+        contiguous = hwframes;
+
+        // Get address from alsa
+        err = snd_pcm_mmap_begin(d->capt, &areas, &hwoffset, &contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
+
+        // Map to device areas
+        sndx_buffer_mmap_dev_areas(d->buf_capt, areas);
+
+        // Copy from device areas to float buffer
+        // NOTE: Soft buffer will also wrap, so how to present in callback?
+        sndx_buffer_dev_to_buf(d->buf_capt, hwoffset, contiguous);
+
+        // Commit to move to next batch
+        err = snd_pcm_mmap_commit(d->capt, hwoffset, contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
+
+        hwframes -= contiguous;
+        nread    += contiguous;
+    }
+
+    err = -(nread != orig_nframes);
+    Return_(err, "Failed: sndx_duplex_read: nread != orig_nframes : %ld != %ld", nread, orig_nframes);
+
+    return 0;
 }
 
-sframes_t sndx_duplex_write( //
-    sndx_duplex_t* d,
-    uframes_t*     offset,
-    uframes_t*     frames)
+int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames)
 {
-    // Write from soft buffer to device as int
-    sndx_buffer_buf_to_dev(d->buf_play, *offset, *frames);
+    int       err;
+    output_t* output = d->out;
 
-    return *frames;
+    err = *frames > d->period_size;
+    Return_(err, "Failed: sndx_duplex_write: nframes > period_size : %ld > %ld", *frames, d->period_size);
+
+    uframes_t hwoffset = 0;
+    uframes_t hwframes = *frames;
+
+    uframes_t contiguous   = 0;
+    sframes_t nwritten     = 0;
+    sframes_t orig_nframes = *frames;
+
+    const area_t* areas = d->buf_play->dev;
+
+    while (hwframes)
+    {
+        contiguous = hwframes;
+
+        // Get address from alsa
+        err = snd_pcm_mmap_begin(d->play, &areas, &hwoffset, &contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
+
+        // Map to device areas
+        sndx_buffer_mmap_dev_areas(d->buf_play, areas);
+
+        // Copy from float buffer to device areas
+        sndx_buffer_buf_to_dev(d->buf_play, hwoffset, contiguous);
+
+        // TODO: silence untouched - should be automatic with soft buffer
+
+        // Commit to move to next batch
+        err = snd_pcm_mmap_commit(d->play, hwoffset, contiguous);
+        SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
+
+        hwframes -= contiguous;
+        nwritten += contiguous;
+    }
+
+    err = -(nwritten != orig_nframes);
+    Return_(err, "Failed: sndx_duplex_write: nwritten != orig_nframes : %ld != %ld", nwritten, orig_nframes);
+
+    return 0;
 }
 
 int sndx_duplex_set_schduler(output_t* output)
