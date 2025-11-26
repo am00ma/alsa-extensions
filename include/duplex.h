@@ -121,11 +121,6 @@ int sndx_duplex_start(sndx_duplex_t* d);
 
 /** @brief Stop playback and capture.
  *
- *  Process:
- *      1. Fill playback with silence
- *      2. pcm_start playback
- *      3. start timer
- *
  *  Errors: TODO
  */
 int sndx_duplex_stop(sndx_duplex_t* d);
