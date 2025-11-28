@@ -72,6 +72,7 @@ set(LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/params.c
     ${CMAKE_SOURCE_DIR}/src/pcm_lfloat.c
     ${CMAKE_SOURCE_DIR}/src/buffer.c
+    ${CMAKE_SOURCE_DIR}/src/ring.c
     ${CMAKE_SOURCE_DIR}/src/timer.c
     ${CMAKE_SOURCE_DIR}/src/pollfds.c
     ${CMAKE_SOURCE_DIR}/src/xrun.c
