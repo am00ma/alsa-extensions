@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "types.h"
+#include "sndx/types.h"
 
 typedef struct pollfd pfd_t;
 

@@ -1,5 +1,5 @@
-#include "buffer.h"
-#include "pcm_lfloat.h"
+#include "sndx/buffer.h"
+#include "sndx/pcm_lfloat.h"
 
 void sndx_dump_buffer(sndx_buffer_t* b, output_t* output)
 {

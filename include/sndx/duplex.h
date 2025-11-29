@@ -9,9 +9,9 @@
  */
 #pragma once
 
-#include "buffer.h"
-#include "pollfds.h"
-#include "timer.h"
+#include "sndx/buffer.h"
+#include "sndx/pollfds.h"
+#include "sndx/timer.h"
 
 /** @brief Analogue of `snd_pcm_t` that manages pcm handles, buffers, polling, timing.
  *

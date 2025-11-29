@@ -1,4 +1,4 @@
-#include "callback.h"
+#include "sndx/callback.h"
 
 void sndx_duplex_copy_capt_to_play( //
     sndx_buffer_t* buf_capt,

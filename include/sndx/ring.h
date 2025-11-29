@@ -6,7 +6,7 @@
  *  */
 #pragma once
 
-#include "pcm_lfloat.h" // IWYU pragma: keep
+#include "sndx/pcm_lfloat.h" // IWYU pragma: keep
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define sndx_ring_to_float   0

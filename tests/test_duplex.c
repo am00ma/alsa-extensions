@@ -17,8 +17,8 @@
  *      Need to capture both playback and capture avail before using mmap
  *
  */
-#include "duplex.h"
-#include "timer.h"
+#include "sndx/duplex.h"
+#include "sndx/timer.h"
 
 int main()
 {

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include "types.h"
+#include "sndx/types.h"
 
 /** @brief Hardware config common to playback and capture (except for channels).
 

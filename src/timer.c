@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "sndx/timer.h"
 
 #define TSTAMP_TYPE SND_PCM_TSTAMP_TYPE_MONOTONIC_RAW
 

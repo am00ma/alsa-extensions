@@ -1,7 +1,7 @@
 #pragma once
 
-#include "plugin_ops.h"
-#include "types.h"
+#include "sndx/plugin_ops.h"
+#include "sndx/types.h"
 
 typedef union snd_tmp_float {
     f32 f;

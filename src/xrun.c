@@ -1,4 +1,4 @@
-#include "xrun.h"
+#include "sndx/xrun.h"
 
 int sndx_xrun_recovery_alsalib(snd_pcm_t* pcm, int err, output_t* output)
 {

@@ -1,5 +1,5 @@
-#include "pollfds.h"
-#include "timer.h" // get_microseconds
+#include "sndx/pollfds.h"
+#include "sndx/timer.h" // get_microseconds
 
 #define MAX_RETRY_COUNT 5
 

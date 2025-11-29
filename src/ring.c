@@ -4,7 +4,7 @@
  *  Implementation mostly taken from jack2/common/ringbuffer.c
  *
  *  */
-#include "ring.h"
+#include "sndx/ring.h"
 
 void sndx_ring_dump(sndx_ring_t* rb, output_t* output)
 {

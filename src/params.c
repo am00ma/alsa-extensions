@@ -1,4 +1,4 @@
-#include "params.h"
+#include "sndx/params.h"
 
 void sndx_dump_params(sndx_params_t* params, output_t* output)
 {

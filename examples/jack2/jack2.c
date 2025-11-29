@@ -1,5 +1,5 @@
-#include "duplex.h"
-#include "pollfds.h"
+#include "sndx/duplex.h"
+#include "sndx/pollfds.h"
 
 typedef struct
 {

@@ -1,4 +1,4 @@
-#include "pcm_lfloat.h"
+#include "sndx/pcm_lfloat.h"
 
 int snd_pcm_linear_get_index(format_t src_format, format_t dst_format)
 {
@@ -97,7 +97,7 @@ void snd_pcm_lfloat_convert_integer_float(const area_t* dst_areas,
 {
 #define GET32_LABELS
 #define PUT32F_LABELS
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef PUT32F_LABELS
 #undef GET32_LABELS
     void*        get32      = get32_labels[get32idx];
@@ -123,12 +123,12 @@ void snd_pcm_lfloat_convert_integer_float(const area_t* dst_areas,
         {
             goto* get32;
 #define GET32_END sample_loaded
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef GET32_END
         sample_loaded:
             goto* put32float;
 #define PUT32F_END sample_put
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef PUT32F_END
         sample_put:
             src += src_step;
@@ -148,7 +148,7 @@ void snd_pcm_lfloat_convert_float_integer(const area_t* dst_areas,
 {
 #define PUT32_LABELS
 #define GET32F_LABELS
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef GET32F_LABELS
 #undef PUT32_LABELS
     void*        put32      = put32_labels[put32idx];
@@ -174,12 +174,12 @@ void snd_pcm_lfloat_convert_float_integer(const area_t* dst_areas,
         {
             goto* get32float;
 #define GET32F_END sample_loaded
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef GET32F_END
         sample_loaded:
             goto* put32;
 #define PUT32_END sample_put
-#include "plugin_ops.h"
+#include "sndx/plugin_ops.h"
 #undef PUT32_END
         sample_put:
             src += src_step;

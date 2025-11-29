@@ -88,7 +88,7 @@ set(LIB_C_FLAGS
     # -pedantic # plugin_ops.h
     -fdiagnostics-color=always)
 
-set(LIB_NAME alsax)
+set(LIB_NAME sndx)
 add_library(${LIB_NAME} STATIC)
 target_link_libraries(${LIB_NAME} PUBLIC ${LIB_LIBS})
 target_sources(${LIB_NAME} PRIVATE ${LIB_SOURCES})

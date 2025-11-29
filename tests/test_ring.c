@@ -1,4 +1,4 @@
-#include "ring.h"
+#include "sndx/ring.h"
 
 int main()
 {

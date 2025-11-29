@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include "types.h"
+#include "sndx/types.h"
 
 /** @brief Backing buffer for device, in non-interleaved float format.
  *

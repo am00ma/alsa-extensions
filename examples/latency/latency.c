@@ -9,7 +9,7 @@
  *  4. Use of mmap is useless however `write_initial_silence` uses mmap
  *
  */
-#include "duplex.h"
+#include "sndx/duplex.h"
 
 // Application
 int main()

@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "types.h"
+#include "sndx/types.h"
 
 /** @brief Time spec (nanoseconds) from sys/time.h `{tv_secs, tv_nsecs}` */
 typedef struct timespec tspec_t;

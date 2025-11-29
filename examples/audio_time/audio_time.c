@@ -41,8 +41,8 @@
  *      - resolution: audio_tstamp_report_p.accuracy
  *
  */
-#include "duplex.h"
-#include "timer.h"
+#include "sndx/duplex.h"
+#include "sndx/timer.h"
 
 // Application
 int main()

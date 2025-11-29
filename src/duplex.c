@@ -1,5 +1,5 @@
-#include "duplex.h"
-#include "params.h"
+#include "sndx/duplex.h"
+#include "sndx/params.h"
 #include <sched.h>
 
 static sndx_params_t default_params = {

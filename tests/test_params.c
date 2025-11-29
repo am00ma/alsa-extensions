@@ -1,4 +1,4 @@
-#include "params.h"
+#include "sndx/params.h"
 
 int main()
 {
