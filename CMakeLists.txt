@@ -20,54 +20,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 include(CTest)
 
 # =========================================================================
-#                      Documentation
-# =========================================================================
-find_package(Doxygen REQUIRED)
-
-set(DOXYGEN_QUIET                  YES)
-set(DOXYGEN_WARN_IF_UNDOCUMENTED   NO)
-set(DOXYGEN_WARN_IF_INCOMPLETE_DOC NO)
-set(DOXYGEN_WARN_NO_PARAMDOC       NO)
-
-set(DOXYGEN_OPTIMIZE_OUTPUT_FOR_C  YES)
-set(DOXYGEN_EXTRACT_STATIC         YES)
-set(DOXYGEN_EXTRACT_ALL            YES)
-set(DOXYGEN_RECURSIVE              YES)
-set(DOXYGEN_CREATE_SUBDIRS         YES)
-set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
-set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
-set(DOXYGEN_EXAMPLE_PATH           examples)
-set(DOXYGEN_EXAMPLE_PATTERNS       *.c)
-set(DOXYGEN_EXAMPLE_RECURSIVE      YES)
-set(DOXYGEN_INCLUDE_PATH           include)
-set(DOXYGEN_IMAGE_PATH             docs/img)
-
-set(DOXYGEN_PLANTUML_JAR_PATH   $(HOME)/.local/bin/plantuml.jar)
-set(DOXYGEN_HAVE_DOT            YES)
-set(DOXYGEN_HAVE_GRAPHVIZ       YES)
-set(DOXYGEN_DOT_IMAGE_FORMAT    "svg")
-set(DOXYGEN_CALL_GRAPH          YES)
-set(DOXYGEN_CALLER_GRAPH        YES)
-set(DOXYGEN_UML_LOOK            YES)
-set(DOXYGEN_DOT_GRAPH_MAX_NODES 50)
-set(DOXYGEN_INTERACTIVE_SVG     YES)
-
-set(DOXYGEN_HTML_COLORSTYLE   "TOGGLE")
-set(DOXYGEN_GENERATE_TREEVIEW YES)
-set(DOXYGEN_DISABLE_INDEX     NO)
-set(DOXYGEN_FULL_SIDEBAR      NO)
-set(DOXYGEN_HTML_EXTRA_STYLESHEET
-    "docs/doxygen-awesome.css")
-
-# https://cmake.org/cmake/help/latest/module/FindDoxygen.html
-doxygen_add_docs(sndx_docs
-    README.md
-    src
-    include
-    docs
-    ALL)
-
-# =========================================================================
 #                     Common
 # =========================================================================
 set(LIB_SOURCES
@@ -120,3 +72,52 @@ add_subdirectory(examples)
 #                     Tools
 # =========================================================================
 add_subdirectory(tools)
+
+# =========================================================================
+#                      Documentation
+# =========================================================================
+find_package(Doxygen REQUIRED)
+
+set(DOXYGEN_QUIET                  YES)
+set(DOXYGEN_WARN_IF_UNDOCUMENTED   NO)
+set(DOXYGEN_WARN_IF_INCOMPLETE_DOC NO)
+set(DOXYGEN_WARN_NO_PARAMDOC       NO)
+
+set(DOXYGEN_OPTIMIZE_OUTPUT_FOR_C  YES)
+set(DOXYGEN_EXTRACT_STATIC         YES)
+set(DOXYGEN_EXTRACT_ALL            YES)
+set(DOXYGEN_RECURSIVE              YES)
+set(DOXYGEN_CREATE_SUBDIRS         YES)
+set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
+set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+set(DOXYGEN_EXAMPLE_PATH           examples)
+set(DOXYGEN_EXAMPLE_PATTERNS       *.c)
+set(DOXYGEN_EXAMPLE_RECURSIVE      YES)
+set(DOXYGEN_INCLUDE_PATH           include)
+set(DOXYGEN_IMAGE_PATH             docs/img)
+
+set(DOXYGEN_PLANTUML_JAR_PATH   $(HOME)/.local/bin/plantuml.jar)
+set(DOXYGEN_HAVE_DOT            YES)
+set(DOXYGEN_HAVE_GRAPHVIZ       YES)
+set(DOXYGEN_DOT_IMAGE_FORMAT    "svg")
+set(DOXYGEN_CALL_GRAPH          YES)
+set(DOXYGEN_CALLER_GRAPH        YES)
+set(DOXYGEN_UML_LOOK            YES)
+set(DOXYGEN_DOT_GRAPH_MAX_NODES 50)
+set(DOXYGEN_INTERACTIVE_SVG     YES)
+
+set(DOXYGEN_HTML_COLORSTYLE   "TOGGLE")
+set(DOXYGEN_GENERATE_TREEVIEW YES)
+set(DOXYGEN_DISABLE_INDEX     NO)
+set(DOXYGEN_FULL_SIDEBAR      NO)
+set(DOXYGEN_HTML_EXTRA_STYLESHEET
+    "docs/doxygen-awesome.css")
+
+# https://cmake.org/cmake/help/latest/module/FindDoxygen.html
+doxygen_add_docs(sndx_docs
+    README.md
+    src
+    include
+    docs
+    ALL)
+
