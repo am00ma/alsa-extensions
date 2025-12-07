@@ -9,7 +9,7 @@ project(
     DESCRIPTION "Extensions to alsa-lib for duplex streams on multiple devices"
     LANGUAGES C)
 
-option(SNDX_BUILD_TESTS "Build test programs" OFF)
+option(SNDX_BUILD_TESTS "Build test programs" ON)
 
 # =========================================================================
 #                      Config
@@ -35,12 +35,12 @@ set(DOXYGEN_EXTRACT_ALL            YES)
 set(DOXYGEN_RECURSIVE              YES)
 set(DOXYGEN_CREATE_SUBDIRS         YES)
 set(DOXYGEN_FILE_PATTERNS          *.h *.c *.md)
-set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-set(DOXYGEN_EXAMPLE_PATH           ${CMAKE_CURRENT_SOURCE_DIR}/examples)
+set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+set(DOXYGEN_EXAMPLE_PATH           examples)
 set(DOXYGEN_EXAMPLE_PATTERNS       *.c)
 set(DOXYGEN_EXAMPLE_RECURSIVE      YES)
-set(DOXYGEN_INCLUDE_PATH           ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(DOXYGEN_IMAGE_PATH             ${CMAKE_CURRENT_SOURCE_DIR}/docs/img)
+set(DOXYGEN_INCLUDE_PATH           include)
+set(DOXYGEN_IMAGE_PATH             docs/img)
 
 set(DOXYGEN_PLANTUML_JAR_PATH   $(HOME)/.local/bin/plantuml.jar)
 set(DOXYGEN_HAVE_DOT            YES)
@@ -57,29 +57,29 @@ set(DOXYGEN_GENERATE_TREEVIEW YES)
 set(DOXYGEN_DISABLE_INDEX     NO)
 set(DOXYGEN_FULL_SIDEBAR      NO)
 set(DOXYGEN_HTML_EXTRA_STYLESHEET
-    "${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen-awesome.css")
+    "docs/doxygen-awesome.css")
 
 # https://cmake.org/cmake/help/latest/module/FindDoxygen.html
 doxygen_add_docs(sndx_docs
-    ${CMAKE_CURRENT_SOURCE_DIR}/README.md
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/docs
+    README.md
+    src
+    include
+    docs
     ALL)
 
 # =========================================================================
 #                     Common
 # =========================================================================
 set(LIB_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/params.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pcm_lfloat.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/timer.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pollfds.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/xrun.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/duplex.c)
-set(LIB_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    src/params.c
+    src/pcm_lfloat.c
+    src/buffer.c
+    src/ring.c
+    src/timer.c
+    src/pollfds.c
+    src/xrun.c
+    src/duplex.c)
+set(LIB_INCLUDES include)
 set(LIB_LIBS     m asound sndfile)
 set(LIB_C_FLAGS
     PRIVATE
@@ -102,7 +102,9 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 # =========================================================================
 #                     Tests
 # =========================================================================
-add_subdirectory(tests)
+if(SNDX_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 
 # =========================================================================
 #                     References
@@ -117,6 +119,4 @@ add_subdirectory(examples)
 # =========================================================================
 #                     Tools
 # =========================================================================
-if(SNDX_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tools)
