@@ -30,16 +30,16 @@ int device_list(void)
     do
     {
         snd_ctl_t* ctl;
-        char       name[32];
+        char       hw_name[32];
         int        device;
 
-        sprintf(name, "hw:%d", card);
-        err = snd_ctl_open(&ctl, name, 0);
-        SndReturn(err, "Failed: snd_ctl_open (card=%d): %s", card);
+        sprintf(hw_name, "hw:%d", card);
+        err = snd_ctl_open(&ctl, hw_name, 0);
+        SndGoto(err, __next_card, "Failed: snd_ctl_open (card=%d): %s", card);
 
         device = -1;
         err    = snd_ctl_rawmidi_next_device(ctl, &device);
-        SndReturn(err, "Failed: snd_ctl_rawmidi_next_device (card=%d): %s", card);
+        SndGoto(err, __next_card, "Failed: snd_ctl_rawmidi_next_device (card=%d): %s", card);
 
         while (device >= 0)
         {
@@ -66,7 +66,7 @@ int device_list(void)
 
             RANGE(sub, subs)
             {
-                //
+
                 snd_rawmidi_info_set_stream(info, sub < subs_in ? SND_RAWMIDI_STREAM_INPUT : SND_RAWMIDI_STREAM_OUTPUT);
                 snd_rawmidi_info_set_subdevice(info, sub);
                 err = snd_ctl_rawmidi_info(ctl, info);
@@ -76,8 +76,10 @@ int device_list(void)
                 {
                     p_info("Inactive stream");
                 }
+
                 name     = snd_rawmidi_info_get_name(info);
                 sub_name = snd_rawmidi_info_get_subdevice_name(info);
+
                 if (sub == 0 && sub_name[0] == '\0')
                 {
                     // Never enters this loop, cause sub_name.len always >= 0
@@ -88,41 +90,44 @@ int device_list(void)
                         .has_input  = sub < subs_in,
                         .has_output = sub < subs_out,
                     };
-                    memcpy(m.dev_name, name, strlen(name));
+                    snprintf(m.dev_name, 128, "%s", name);
                     snprintf(m.hw_name, 32, "hw:%d,%d", m.card, m.device);
                     p_info("%c%c  %s  %s (%d subdevices)", //
                            m.has_input ? 'I' : ' ',        //
                            m.has_output ? 'O' : ' ',       //
                            m.hw_name, m.dev_name, subs);   //
+
+                    // NOTE: Don't know why we break...
                     break;
                 }
-                else
-                {
-                    sndx_midi_device_t m = {
-                        .card       = card,
-                        .device     = device,
-                        .sub        = sub,
-                        .has_input  = sub < subs_in,
-                        .has_output = sub < subs_out,
-                    };
-                    memcpy(m.dev_name, sub_name, strlen(sub_name));
-                    snprintf(m.hw_name, 32, "hw:%d,%d,%d", m.card, m.device, m.sub);
-                    p_info("%c%c  %s  %s",           //
-                           m.has_input ? 'I' : ' ',  //
-                           m.has_output ? 'O' : ' ', //
-                           m.hw_name, m.dev_name);   //
-                }
-            }
+
+                // We have all the params we need
+                sndx_midi_device_t m = {
+                    .card       = card,
+                    .device     = device,
+                    .sub        = sub,
+                    .has_input  = sub < subs_in,
+                    .has_output = sub < subs_out,
+                };
+                snprintf(m.dev_name, 128, "%s", sub_name);
+                snprintf(m.hw_name, 32, "hw:%d,%d,%d", m.card, m.device, m.sub);
+                p_info("%c%c  %s  %s",           //
+                       m.has_input ? 'I' : ' ',  //
+                       m.has_output ? 'O' : ' ', //
+                       m.hw_name, m.dev_name);   //
+
+            } // end of RANGE(sub, subs)
 
         __next_device:
             err = snd_ctl_rawmidi_next_device(ctl, &device);
-            SndReturn(err, "Failed: snd_ctl_rawmidi_next_device (card=%d): %s", card);
+            SndGoto(err, __next_card, "Failed: snd_ctl_rawmidi_next_device (card=%d): %s", card);
         }
 
-        snd_ctl_close(ctl);
+    __next_card:
+        snd_ctl_close(ctl); // Close even if open failed, we are not checking return error
 
         err = snd_card_next(&card);
-        Return(err, "Failed: cannot determine card number (card < 0)");
+        SndReturn(err, "Failed: cannot determine card number (card < 0): %s");
 
     } while (card >= 0);
 
