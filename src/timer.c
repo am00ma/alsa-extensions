@@ -103,6 +103,7 @@ void sndx_timer_stop(sndx_timer_t* t, snd_pcm_t* play, snd_pcm_t* capt)
     timestamp_get(capt, &t->stop_capt);
 }
 
+// BUG: Final check is using start instead of stop
 void sndx_dump_timer(sndx_timer_t* t, output_t* output)
 {
     AssertMsg(t->rate, "Please set rate to measure timing differences.");
