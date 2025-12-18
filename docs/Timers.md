@@ -1,5 +1,7 @@
 # Timers
 
+## Kernel documentation
+
 - [ALSA Kernel Documentation](https://docs.kernel.org/sound/designs/timestamping.html)
 
 Various times measured by ALSA:
@@ -15,6 +17,8 @@ Various times measured by ALSA:
   |<----------------- delay---------------------->|           |
                                  |<----ring buffer length---->|
 ```
+
+## Timing options
 
 All the various choices available:
 
@@ -60,3 +64,40 @@ typedef struct _snd_pcm_audio_tstamp_report {
     unsigned int accuracy;          /**< up to 4.29s in ns units, will be packed in separate field  */
 } snd_pcm_audio_tstamp_report_t;
 ```
+
+## Jack timekeeping
+
+- [Using a DLL to filter time](https://kokkinizita.linuxaudio.org/papers/usingdll.pdf)
+- Atomic struct
+  - read by: audio driver - `JackAlsaDriver::frame_time()`
+  - read by: midi driver - `jack_frame_time` -> `JackAlsaDriver::frame_time()`
+  - aux write (poll_exit): audio driver - `JackAlsaDriver::SetTime(..)`
+  - written by: jack engine control - `JackEngineControl::CycleIncTime()`
+- Keeps track of `fFirstWakeUp`, i.e. whether xrun was encountered / device was started/reset
+
+```cpp
+// 1. fBeginDateUst has been set in alsa_driver_wait;
+            SetTime(time = poll_ret);
+                fBeginDateUst = time;
+
+// 2. CycleIncTime has to be done before read
+JackDriver::CycleIncTime();
+    fEngineControl->CycleIncTime(fBeginDateUst);
+        fFrameTimer.IncFrameTime(fBufferSize, callback_usecs = fBeginDateUst, fPeriodUsecs);
+            if (fFirstWakeUp) {
+                InitFrameTimeAux(callback_usecs = fBeginDateUst, period_usecs = fPeriodUsecs);
+                fFirstWakeUp = false;
+            }
+            IncFrameTimeAux(buffer_size = fBufferSize, callback_usecs = fBeginDateUst, period_usecs = fPeriodUsecs);
+                float delta = (float)((int64_t)callback_usecs - (int64_t)timer->fNextWakeUp);
+                delta *= timer->fFilterOmega;
+                timer->fCurrentWakeup = timer->fNextWakeUp;
+                timer->fCurrentCallback = callback_usecs;
+                timer->fFrames += buffer_size;
+                timer->fPeriodUsecs += timer->fFilterOmega * delta;
+                timer->fNextWakeUp += (int64_t)floorf(timer->fPeriodUsecs + 1.41f * delta + 0.5f);
+```
+
+![Jack frame timer](./img/jack-frame-timer.svg)
+
+---
