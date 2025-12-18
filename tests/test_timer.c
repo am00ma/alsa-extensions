@@ -1,4 +1,5 @@
 #include "sndx/timer.h"
+#include <alsa/asoundlib.h>
 #include <pthread.h>
 #include <sys/timerfd.h>
 
@@ -32,6 +33,9 @@ typedef struct Timer
     int err; ///< return value
 
 } Timer;
+
+Timer*          stats;
+constexpr isize slen = 1'000;
 
 Timer new_timer(u32 rate, u32 period_size)
 {
@@ -135,25 +139,10 @@ void* thread_handler(void* arg)
         }
 
         // Log necessary stats
-        timer_dump(t, iter);
-
-        // Update to as for correct period
-        timeout_secs = (f32)t->next_wakeup / USEC_PER_SEC;
-        next_timeout = (struct itimerspec){
-            .it_interval = {0, 0},
-            .it_value =
-                {
-                    timeout_secs,
-                    modff(timeout_secs, &timeout_secs) * NSEC_PER_SEC,
-                },
-        };
-
-        // Set next timeout
-        err = timerfd_settime(pfds[0].fd, TIMER_ABSTIME, &next_timeout, NULL);
-        SysGoto(err, __close, "Failed: timerfd_settime: %s");
+        stats[iter] = *t;
 
         // // Update to as for correct period
-        // timeout_secs = t->period_usecs / USEC_PER_SEC;
+        // timeout_secs = (f32)t->next_wakeup / USEC_PER_SEC;
         // next_timeout = (struct itimerspec){
         //     .it_interval = {0, 0},
         //     .it_value =
@@ -164,8 +153,23 @@ void* thread_handler(void* arg)
         // };
         //
         // // Set next timeout
-        // err = timerfd_settime(pfds[0].fd, 0, &next_timeout, NULL);
+        // err = timerfd_settime(pfds[0].fd, TIMER_ABSTIME, &next_timeout, NULL);
         // SysGoto(err, __close, "Failed: timerfd_settime: %s");
+
+        // Update to as for correct period
+        timeout_secs = t->period_usecs / USEC_PER_SEC;
+        next_timeout = (struct itimerspec){
+            .it_interval = {0, 0},
+            .it_value =
+                {
+                    timeout_secs,
+                    modff(timeout_secs, &timeout_secs) * NSEC_PER_SEC,
+                },
+        };
+
+        // Set next timeout
+        err = timerfd_settime(pfds[0].fd, 0, &next_timeout, NULL);
+        SysGoto(err, __close, "Failed: timerfd_settime: %s");
 
         iter++;
     }
@@ -183,8 +187,9 @@ int main()
 {
     int err;
 
+    stats = calloc(slen, sizeof(Timer));
+
     Timer timer = new_timer(48000, 128);
-    print_(timer.period_usecs, "%.6f");
 
     pthread_t tid;
 
@@ -194,11 +199,38 @@ int main()
     err = pthread_join(tid, NULL);
     SysFatal(err, "Failed: pthread_join: %s");
 
-    if (timer.err) { p_info("Thread finished with error: %d", timer.err); }
-    else
+    // if (timer.err) { p_info("Thread finished with error: %d", timer.err); }
+    // else
+    // {
+    //     p_info("Thread finished successfully");
+    // }
+
+    printf("iter,            "
+           "frames,          "
+           "current_callback,"
+           "current_wakeup,  "
+           "next_wakeup,     "
+           "period_usecs,    "
+           "filter_omega     \n");
+
+    RANGE(i, slen)
     {
-        p_info("Thread finished successfully");
+        Timer* t = &stats[i];
+
+        printf("%ld,"  // iter,
+               "%ld,"  // frames,
+               "%ld,"  // current_callback,
+               "%ld,"  // current_wakeup,
+               "%ld,"  // next_wakeup,
+               "%f,"   // period_usecs,
+               "%f\n", // filter_omega
+               //
+               i, t->frames, t->current_callback, //
+               t->current_wakeup, t->next_wakeup, //
+               t->period_usecs, t->filter_omega);
     }
+
+    free(stats);
 
     return 0;
 }
