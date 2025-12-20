@@ -41,6 +41,19 @@ typedef snd_pcm_status_t       status_t;
 typedef snd_pcm_hw_params_t    hw_params_t;
 typedef snd_pcm_sw_params_t    sw_params_t;
 
+/** @brief Time spec (nanoseconds) from sys/time.h `{tv_secs, tv_nsecs}` */
+typedef struct timespec tspec_t;
+
+/** @brief Time spec (microseconds) from alsa `{tv_sec, tv_usec}` */
+typedef snd_timestamp_t               tstamp_t;
+typedef snd_htimestamp_t              htstamp_t;
+typedef snd_pcm_audio_tstamp_config_t tstamp_config_t;
+typedef snd_pcm_audio_tstamp_report_t tstamp_report_t;
+typedef snd_pcm_audio_tstamp_type_t   tstamp_type_t;
+
+/** @brief High resolution time spec (nanoseconds) from alsa `{tv_sec, tv_nsec}` */
+typedef snd_htimestamp_t htstamp_t;
+
 /* ---------------------------------------------------------------------------
  * Normal Error handling -> prints to stderr
  * ------------------------------------------------------------------------- */

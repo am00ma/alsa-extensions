@@ -10,19 +10,6 @@
 
 #include "sndx/types.h"
 
-/** @brief Time spec (nanoseconds) from sys/time.h `{tv_secs, tv_nsecs}` */
-typedef struct timespec tspec_t;
-
-/** @brief Time spec (microseconds) from alsa `{tv_sec, tv_usec}` */
-typedef snd_timestamp_t               tstamp_t;
-typedef snd_htimestamp_t              htstamp_t;
-typedef snd_pcm_audio_tstamp_config_t tstamp_config_t;
-typedef snd_pcm_audio_tstamp_report_t tstamp_report_t;
-typedef snd_pcm_audio_tstamp_type_t   tstamp_type_t;
-
-/** @brief High resolution time spec (nanoseconds) from alsa `{tv_sec, tv_nsec}` */
-typedef snd_htimestamp_t htstamp_t;
-
 /** @brief Convert time in frames to time in microseconds */
 #define frames_to_micro(frames, rate) (u64)((frames * 1000000LL) + (rate / 2)) / rate;
 

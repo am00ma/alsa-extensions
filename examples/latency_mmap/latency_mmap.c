@@ -14,7 +14,7 @@
 // Application
 int main()
 {
-    int err; ///< Brief description after the member
+    int err;
 
     output_t* output;
     err = snd_output_stdio_attach(&output, stderr, 0);
