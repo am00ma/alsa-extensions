@@ -1,5 +1,4 @@
 #include "sndx/timer.h"
-#include <alsa/asoundlib.h>
 #include <pthread.h>
 #include <sys/timerfd.h>
 
@@ -104,7 +103,10 @@ void* thread_handler(void* arg)
         // Before snd_pcm_wait
         clock_gettime(CLOCK_MONOTONIC, &poll_enter);
 
-        err = poll(pfds, 1, 1.5 * t->period_usecs); // 1.5 times the period as timeout
+        // 1.5 times the period as timeout, milliseconds
+        i64 poll_timeout = 1.5 * t->period_usecs / 1000;
+
+        err = poll(pfds, 1, poll_timeout);
         Goto(err < 0, __close, "Failed: poll: %s", strerror(errno));
 
         // After snd_pcm_wait

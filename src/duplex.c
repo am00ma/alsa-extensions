@@ -219,8 +219,9 @@ int sndx_duplex_write_rw_initial_silence(sndx_duplex_t* d)
         err = snd_pcm_writei(d->play, buf, d->period_size);
         SndGoto_(err, __error, "Failed: snd_pcm_writei: %s");
     }
-    a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", //
-           d->period_size * d->periods, d->period_size, d->periods);
+
+    // a_info("Wrote silence: %ld frames (period_size=%ld, periods=%d)", //
+    //        d->period_size * d->periods, d->period_size, d->periods);
 
     return 0;
 
@@ -342,7 +343,7 @@ int sndx_duplex_start(sndx_duplex_t* d)
     }
 
     // RUNNING
-    sndx_dump_duplex_status(d, output);
+    // sndx_dump_duplex_status(d, output);
 
     // Start the timer (TODO: provide option to check if in xrun)
     sndx_timer_start(d->timer, d->rate, d->play, d->capt);
@@ -366,7 +367,8 @@ int sndx_duplex_stop(sndx_duplex_t* d)
 
     // Stop the timer (TODO: provide option to check if in xrun)
     sndx_timer_stop(d->timer, d->play, d->capt);
-    sndx_dump_timer(d->timer, d->out);
+
+    // sndx_dump_timer(d->timer, d->out);
 
     return 0;
 }
