@@ -1,7 +1,4 @@
 #include "sndx/duplex.h"
-#include "sndx/types.h"
-#include <common-types.h>
-#include <stdlib.h>
 
 // ----------------------------------------
 // ----- Helpers -----
@@ -260,7 +257,7 @@ int main(int argc, char* argv[])
         // First init, set for prev_wakeup
         if (!t->frames) { t->this_wakeup_usec = callback_usecs - (u64)t->period_usecs; }
 
-        t->frames           += t->period_size;
+        t->frames           += avail;
         t->prev_wakeup_usec  = t->this_wakeup_usec;
         t->this_wakeup_usec  = callback_usecs;
         t->diff_wakeup_usec  = -(t->this_wakeup_usec - t->prev_wakeup_usec);

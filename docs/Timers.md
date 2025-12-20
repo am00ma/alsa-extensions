@@ -65,6 +65,95 @@ typedef struct _snd_pcm_audio_tstamp_report {
 } snd_pcm_audio_tstamp_report_t;
 ```
 
+## Measurements
+
+Ordering is off due to use of autoplot.
+
+Device params: Presonus A96 USB Audio; 48000; S32_LE; 2,2 channels
+
+```c
+// 0 - Compat
+// 1 - default
+// 2 - link
+// 3 - link_absolute
+// 4 - link_estimated
+// 5 - link_synchronized
+int type = 2;
+
+// Include delay in report
+int do_delay = 0;
+
+// poll
+snd_pcm_wait(d->capt, 1000);
+
+// htstamp, config, report
+timer_timestamp(d->play, ...);
+timer_timestamp(d->capt, ...);
+
+t->read_avail  = snd_pcm_avail_update(d->capt);
+t->write_avail = snd_pcm_avail_update(d->play);
+
+t->play_trigger_nsec = ToNano(p_ht_trigger);
+t->play_sys_nsec     = ToNano(p_ht_sys) - t->play_trigger_nsec;
+t->play_audio_nsec   = ToNano(p_ht_audio);
+t->play_diff_nsecs   = t->play_sys_nsec - t->play_audio_nsec;
+
+t->capt_trigger_nsec = ToNano(c_ht_trigger);
+t->capt_sys_nsec     = ToNano(c_ht_sys) - t->capt_trigger_nsec;
+t->capt_audio_nsec   = ToNano(c_ht_audio);
+t->capt_diff_nsecs   = t->capt_sys_nsec - t->capt_audio_nsec;
+```
+
+1. default
+
+[DEFAULT, no_delay](./img/test_timer_pcm_drift_htstamp_1_0.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT, no_delay](./img/test_timer_pcm_drift_htstamp_1_0.png)
+
+[DEFAULT, do_delay](./img/test_timer_pcm_drift_htstamp_1_1.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_DEFAULT, do_delay](./img/test_timer_pcm_drift_htstamp_1_1.png)
+
+2. link
+
+[LINK, no_delay](./img/test_timer_pcm_drift_htstamp_2_0.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK, no_delay](./img/test_timer_pcm_drift_htstamp_2_0.png)
+
+[LINK, do_delay](./img/test_timer_pcm_drift_htstamp_2_1.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK, do_delay](./img/test_timer_pcm_drift_htstamp_2_1.png)
+
+3. link_absolute
+
+[LINK_ABSOLUTE, no_delay](./img/test_timer_pcm_drift_htstamp_3_0.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE, no_delay](./img/test_timer_pcm_drift_htstamp_3_0.png)
+
+[LINK_ABSOLUTE, do_delay](./img/test_timer_pcm_drift_htstamp_3_1.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE, do_delay](./img/test_timer_pcm_drift_htstamp_3_1.png)
+
+4. link_estimated
+
+[LINK_ESTIMATED, no_delay](./img/test_timer_pcm_drift_htstamp_4_0.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED, no_delay](./img/test_timer_pcm_drift_htstamp_4_0.png)
+
+[LINK_ESTIMATED, do_delay](./img/test_timer_pcm_drift_htstamp_4_1.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED, do_delay](./img/test_timer_pcm_drift_htstamp_4_1.png)
+
+5. link_synchronized
+
+[LINK_SYNCHRONIZED, no_delay](./img/test_timer_pcm_drift_htstamp_5_0.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED, no_delay](./img/test_timer_pcm_drift_htstamp_5_0.png)
+
+[LINK_SYNCHRONIZED, do_delay](./img/test_timer_pcm_drift_htstamp_5_1.svg)
+
+- ![SND_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED, do_delay](./img/test_timer_pcm_drift_htstamp_5_1.png)
+
 ## Jack timekeeping
 
 - [Using a DLL to filter time](https://kokkinizita.linuxaudio.org/papers/usingdll.pdf)
