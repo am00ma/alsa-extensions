@@ -13,7 +13,7 @@ int main()
     SndFatal(err, "Failed snd_output_stdio_attach: %s");
 
     // err = create_loopback_handle(&play, arg_pdevice, arg_pctl, "playback");
-    // err = create_loopback_handle(&capt, arg_pdevice, arg_pctl, "capture");
+    // err = create_loopback_handle(&capt, arg_cdevice, arg_cctl, "capture");
     // err = create_loopback(&loop, play, capt, output);
     // set_loop_time(loop, arg_loop_time);
     // add_loop(loop);
@@ -45,12 +45,12 @@ int main()
     //
     //                 err = poll(pfds, j, wake);
     //
-    //                for (i = j = 0; i < thread->loopbacks_count; i++) {
-    //                    struct loopback* loop = thread->loopbacks[i];
-    //                    if (j < loop->active_pollfd_count)
-    //                        err = pcmjob_pollfds_handle(loop, &pfds[j]);
-    //                    j += loop->active_pollfd_count;
-    //               }
+    //                 for (i = j = 0; i < thread->loopbacks_count; i++) {
+    //                     struct loopback* loop = thread->loopbacks[i];
+    //                     if (j < loop->active_pollfd_count)
+    //                         err = pcmjob_pollfds_handle(loop, &pfds[j]);
+    //                     j += loop->active_pollfd_count;
+    //                }
     //
     //         }
     //

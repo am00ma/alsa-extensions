@@ -1,13 +1,6 @@
 #include "sndx/duplex.h"
 
-#define max(a, b)                                                                                                      \
-    ({                                                                                                                 \
-        __typeof__(a) _a = (a);                                                                                        \
-        __typeof__(b) _b = (b);                                                                                        \
-        _a > _b ? _a : _b;                                                                                             \
-    })
-
-#define min(a, b)                                                                                                      \
+#define Min(a, b)                                                                                                      \
     ({                                                                                                                 \
         __typeof__(a) _a = (a);                                                                                        \
         __typeof__(b) _b = (b);                                                                                        \
@@ -30,6 +23,13 @@ typedef struct Timer
     u64 prev_wakeup;  ///< Prev value for computing diff
     i64 diff_wakeup;  ///< Compute difference
     f32 period_usecs; ///< From difference
+
+    u32 read_iters;  ///< Number of iterations to read
+    u32 write_iters; ///< Number of iterations to write
+
+    i64 read_avail;  ///< Available read on each iteration
+    i64 write_avail; ///< Available write on each iteration
+    i64 min_avail;   ///< Minimum of above and period size
 
     int err; ///< return value
 
@@ -118,23 +118,27 @@ int main()
         i64 avail_play = snd_pcm_avail_update(d->play);
         SndGoto_(avail_play, __close, "Failed: snd_pcm_avail: %s");
 
-        i64 avail = min(avail_play, avail_capt);
-        avail     = min(avail, t->period_size);
+        i64 avail = Min(avail_play, avail_capt);
+        avail     = Min(avail, t->period_size);
 
-        i64 nread = 0;
+        i64 nread      = 0;
+        u32 read_iters = 0;
         while (nread < avail)
         {
             err = snd_pcm_readi(d->capt, buf, avail - nread);
             SndGoto_(err, __close, "Failed: snd_pcm_readi: %s");
             nread += err;
+            read_iters++;
         }
 
-        i64 nwritten = 0;
+        i64 nwritten    = 0;
+        u32 write_iters = 0;
         while (nwritten < avail)
         {
             err = snd_pcm_writei(d->play, buf, avail - nwritten);
             SndGoto_(err, __close, "Failed: snd_pcm_writei: %s");
             nwritten += err;
+            write_iters++;
         }
 
         // First init, set for prev_wakeup
@@ -144,6 +148,12 @@ int main()
         t->prev_wakeup  = t->this_wakeup;
         t->this_wakeup  = callback_usecs;
         t->diff_wakeup  = -(t->this_wakeup - t->prev_wakeup);
+
+        t->read_avail  = avail_capt;
+        t->write_avail = avail_play;
+        t->min_avail   = avail;
+        t->read_iters  = read_iters;
+        t->write_iters = write_iters;
 
         // Log necessary stats
         stats[iter] = *t;
@@ -161,11 +171,16 @@ __close:
 
     snd_output_close(output);
 
-    printf("iter        ,"
-           "frames      ,"
-           "this_wakeup ,"
-           "prev_wakeup ,"
-           "diff_wakeup ,"
+    printf("iter,"
+           "frames,"
+           "this_wakeup,"
+           "prev_wakeup,"
+           "diff_wakeup,"
+           "read_avail,"
+           "write_avail,"
+           "min_avail,"
+           "read_iters,"
+           "write_iters,"
            "period_usecs\n");
 
     RANGE(i, slen)
@@ -177,11 +192,17 @@ __close:
                "%ld,"  // this_wakeup,
                "%ld,"  // prev_wakeup,
                "%ld,"  // diff_wakeup,
+               "%ld,"  // read_avail,
+               "%ld,"  // write_avail,
+               "%ld,"  // min_avail,
+               "%d,"   // read_iters,
+               "%d,"   // write_iters,
                "%f\n", // period_usecs
                //
-               i, t->frames, t->this_wakeup,   //
-               t->prev_wakeup, t->diff_wakeup, //
-               t->period_usecs);
+               i, t->frames,                                   //
+               t->this_wakeup, t->prev_wakeup, t->diff_wakeup, //
+               t->read_avail, t->write_avail, t->min_avail,    //
+               t->read_iters, t->write_iters, t->period_usecs);
     }
 
     free(stats);
