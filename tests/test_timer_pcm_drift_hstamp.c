@@ -1,6 +1,7 @@
 #include "sndx/duplex.h"
 #include "sndx/types.h"
 #include <common-types.h>
+#include <stdlib.h>
 
 // ----------------------------------------
 // ----- Helpers -----
@@ -104,24 +105,36 @@ __failed:
 Timer*          stats;
 constexpr isize slen = 10000;
 
-// 0 - Compat
-// 1 - default
-// 2 - link
-// 3 - link_absolute
-// 4 - link_estimated
-// 5 - link_synchronized
-constexpr int type = 2;
-
-// Include delay in report
-constexpr int do_delay = 1;
-
 // ----------------------------------------
 // ----- Main -----
 // ----------------------------------------
 
-int main()
+int main(int argc, char* argv[])
 {
     int err;
+
+    // 0 - Compat
+    // 1 - default
+    // 2 - link
+    // 3 - link_absolute
+    // 4 - link_estimated
+    // 5 - link_synchronized
+    int type = 2;
+
+    // Include delay in report
+    int do_delay = 0;
+
+    if (argc == 2)
+    {
+        int opt_type = atoi(argv[1]);
+        type         = opt_type;
+    }
+
+    if (argc == 3)
+    {
+        int opt_do_delay = atoi(argv[2]);
+        do_delay         = opt_do_delay;
+    }
 
     tstamp_config_t config_p;
     tstamp_config_t config_c;
