@@ -42,10 +42,12 @@ typedef struct Timer
     u64 play_trigger_nsec; ///< device trigger timestamp (nsecs)
     u64 capt_audio_nsec;   ///< device high resolution timestamp for capture (nsecs)
     u64 play_sys_nsec;     ///< system timestamp (nsecs)
+    i64 play_diff_nsecs;   ///< audio - (system - trigger) (nsecs)
 
     u64 capt_trigger_nsec; ///< device trigger timestamp (nsecs)
     u64 play_audio_nsec;   ///< device high resolution timestamp for playback (nsecs)
     u64 capt_sys_nsec;     ///< system timestamp (nsecs)
+    i64 capt_diff_nsecs;   ///< audio - (system - trigger) (nsecs)
 
     int err; ///< return value
 
@@ -100,7 +102,7 @@ __failed:
 // ----------------------------------------
 
 Timer*          stats;
-constexpr isize slen = 1000;
+constexpr isize slen = 10000;
 
 // 0 - Compat
 // 1 - default
@@ -259,10 +261,12 @@ int main()
         t->play_trigger_nsec = ToNano(p_ht_trigger);
         t->play_sys_nsec     = ToNano(p_ht_sys) - t->play_trigger_nsec;
         t->play_audio_nsec   = ToNano(p_ht_audio);
+        t->play_diff_nsecs   = t->play_sys_nsec - t->play_audio_nsec;
 
         t->capt_trigger_nsec = ToNano(c_ht_trigger);
         t->capt_sys_nsec     = ToNano(c_ht_sys) - t->capt_trigger_nsec;
         t->capt_audio_nsec   = ToNano(c_ht_audio);
+        t->capt_diff_nsecs   = t->capt_sys_nsec - t->capt_audio_nsec;
 
         // Log necessary stats
         stats[iter] = *t;
@@ -293,9 +297,11 @@ __close:
            "play_sys_nsec,"
            "play_audio_nsec,"
            "play_trigger_nsec,"
+           "play_diff_nsecs,"
            "capt_sys_nsec,"
            "capt_audio_nsec,"
            "capt_trigger_nsec,"
+           "capt_diff_nsecs,"
            "period_usecs\n");
 
     RANGE(i, slen)
@@ -315,17 +321,19 @@ __close:
                "%ld,"  // play_sys_nsec,
                "%ld,"  // play_audio_nsec,
                "%ld,"  // play_trigger_nsec,
+               "%ld,"  // play_diff_nsecs,
                "%ld,"  // capt_sys_nsec,
                "%ld,"  // capt_audio_nsec,
                "%ld,"  // capt_trigger_nsec,
+               "%ld,"  // capt_diff_nsecs,
                "%f\n", // period_usecs
                //
-               i, t->frames,                                                  //
-               t->this_wakeup_usec, t->prev_wakeup_usec, t->diff_wakeup_usec, //
-               t->read_avail, t->write_avail, t->min_avail,                   //
-               t->read_iters, t->write_iters,                                 //
-               t->play_sys_nsec, t->play_audio_nsec, t->play_trigger_nsec,    //
-               t->capt_sys_nsec, t->capt_audio_nsec, t->capt_trigger_nsec,    //
+               i, t->frames,                                                                   //
+               t->this_wakeup_usec, t->prev_wakeup_usec, t->diff_wakeup_usec,                  //
+               t->read_avail, t->write_avail, t->min_avail,                                    //
+               t->read_iters, t->write_iters,                                                  //
+               t->play_sys_nsec, t->play_audio_nsec, t->play_trigger_nsec, t->play_diff_nsecs, //
+               t->capt_sys_nsec, t->capt_audio_nsec, t->capt_trigger_nsec, t->capt_diff_nsecs, //
                t->period_usecs);
     }
 
