@@ -161,3 +161,21 @@ void sndx_buffer_buf_to_dev(sndx_buffer_t* b, uframes_t offset, uframes_t frames
         b->channels, frames,              //
         b->to_dev_idx_int32, b->to_dev_idx_float32);
 }
+
+void sndx_buffer_dev_to_buf_skew(sndx_buffer_t* b, uframes_t frames, uframes_t dev_offset, uframes_t buf_offset)
+{
+    snd_pcm_lfloat_convert_integer_float( //
+        b->buf, buf_offset,               //
+        b->dev, dev_offset,               //
+        b->channels, frames,              //
+        b->from_dev_idx_int32, b->from_dev_idx_float32);
+}
+
+void sndx_buffer_buf_to_dev_skew(sndx_buffer_t* b, uframes_t frames, uframes_t buf_offset, uframes_t dev_offset)
+{
+    snd_pcm_lfloat_convert_float_integer( //
+        b->dev, dev_offset,               //
+        b->buf, buf_offset,               //
+        b->channels, frames,              //
+        b->to_dev_idx_int32, b->to_dev_idx_float32);
+}

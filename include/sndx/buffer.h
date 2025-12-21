@@ -70,3 +70,6 @@ void sndx_buffer_dev_to_buf(sndx_buffer_t* b, uframes_t offset, uframes_t frames
 
 void sndx_buffer_buf_to_dev_old(sndx_buffer_t* b, uframes_t offset, uframes_t frames);
 void sndx_buffer_dev_to_buf_old(sndx_buffer_t* b, uframes_t offset, uframes_t frames);
+
+void sndx_buffer_dev_to_buf_skew(sndx_buffer_t* b, uframes_t frames, uframes_t dev_offset, uframes_t buf_offset);
+void sndx_buffer_buf_to_dev_skew(sndx_buffer_t* b, uframes_t frames, uframes_t buf_offset, uframes_t dev_offset);

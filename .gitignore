@@ -2,6 +2,7 @@
 /build
 /data
 /jack2
+/gui
 
 compile_commands.json
 outputs

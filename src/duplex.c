@@ -1,4 +1,5 @@
 #include "sndx/duplex.h"
+#include "sndx/buffer.h"
 #include "sndx/params.h"
 #include <sched.h>
 
@@ -373,7 +374,7 @@ int sndx_duplex_stop(sndx_duplex_t* d)
     return 0;
 }
 
-int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
+int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames, uframes_t* offset)
 {
     int       err;
     output_t* output = d->out;
@@ -381,8 +382,10 @@ int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
     err = -(*frames > d->period_size);
     Return_(err, "Failed: sndx_duplex_read: frames > period_size : %ld > %ld", *frames, d->period_size);
 
-    uframes_t hwoffset = 0;
-    uframes_t hwframes = *frames;
+    uframes_t dev_offset = 0;
+    uframes_t dev_frames = *frames;
+
+    uframes_t buf_offset = *offset;
 
     uframes_t contiguous   = 0;
     sframes_t nread        = 0;
@@ -390,12 +393,12 @@ int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
 
     const area_t* areas = d->buf_capt->dev;
 
-    while (hwframes)
+    while (dev_frames)
     {
-        contiguous = hwframes;
+        contiguous = dev_frames;
 
         // Get address from alsa
-        err = snd_pcm_mmap_begin(d->capt, &areas, &hwoffset, &contiguous);
+        err = snd_pcm_mmap_begin(d->capt, &areas, &dev_offset, &contiguous);
         SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
 
         // Map to device areas
@@ -403,15 +406,18 @@ int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
 
         // Copy from device areas to float buffer
         // NOTE: Soft buffer will also wrap, so how to present in callback?
-        sndx_buffer_dev_to_buf(d->buf_capt, hwoffset, contiguous);
+        sndx_buffer_dev_to_buf_skew(d->buf_capt, contiguous, dev_offset, buf_offset);
 
         // Commit to move to next batch
-        err = snd_pcm_mmap_commit(d->capt, hwoffset, contiguous);
+        err = snd_pcm_mmap_commit(d->capt, dev_offset, contiguous);
         SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
 
-        hwframes -= contiguous;
-        nread    += contiguous;
+        dev_frames -= contiguous;
+        buf_offset += contiguous;
+        nread      += contiguous;
     }
+
+    *frames = nread;
 
     err = -(nread != orig_nframes);
     Return_(err, "Failed: sndx_duplex_read: nread != orig_nframes : %ld != %ld", nread, orig_nframes);
@@ -419,7 +425,7 @@ int sndx_duplex_read(sndx_duplex_t* d, uframes_t* frames)
     return 0;
 }
 
-int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames)
+int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames, uframes_t* offset)
 {
     int       err;
     output_t* output = d->out;
@@ -427,8 +433,10 @@ int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames)
     err = *frames > d->period_size;
     Return_(err, "Failed: sndx_duplex_write: nframes > period_size : %ld > %ld", *frames, d->period_size);
 
-    uframes_t hwoffset = 0;
-    uframes_t hwframes = *frames;
+    uframes_t dev_offset = 0;
+    uframes_t dev_frames = *frames;
+
+    uframes_t buf_offset = *offset;
 
     uframes_t contiguous   = 0;
     sframes_t nwritten     = 0;
@@ -436,28 +444,28 @@ int sndx_duplex_write(sndx_duplex_t* d, uframes_t* frames)
 
     const area_t* areas = d->buf_play->dev;
 
-    while (hwframes)
+    while (dev_frames)
     {
-        contiguous = hwframes;
+        contiguous = dev_frames;
 
         // Get address from alsa
-        err = snd_pcm_mmap_begin(d->play, &areas, &hwoffset, &contiguous);
+        err = snd_pcm_mmap_begin(d->play, &areas, &dev_offset, &contiguous);
         SndReturn_(err, "Failed: snd_pcm_mmap_begin %s");
 
         // Map to device areas
         sndx_buffer_mmap_dev_areas(d->buf_play, areas);
 
         // Copy from float buffer to device areas
-        sndx_buffer_buf_to_dev(d->buf_play, hwoffset, contiguous);
+        sndx_buffer_buf_to_dev_skew(d->buf_play, contiguous, buf_offset, dev_offset);
 
         // TODO: silence untouched - should be automatic with soft buffer
 
         // Commit to move to next batch
-        err = snd_pcm_mmap_commit(d->play, hwoffset, contiguous);
+        err = snd_pcm_mmap_commit(d->play, dev_offset, contiguous);
         SndReturn_(err, "Failed: snd_pcm_mmap_commit %s");
 
-        hwframes -= contiguous;
-        nwritten += contiguous;
+        dev_frames -= contiguous;
+        nwritten   += contiguous;
     }
 
     err = -(nwritten != orig_nframes);
