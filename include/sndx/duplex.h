@@ -125,6 +125,15 @@ int sndx_duplex_start(sndx_duplex_t* d);
  */
 int sndx_duplex_stop(sndx_duplex_t* d);
 
+/** @brief Get available frames on device
+ *
+ *  Returns min of:
+ *      1. capt avail
+ *      2. play avail
+ *      3. period size
+ */
+int sndx_duplex_wait(sndx_duplex_t* d, uframes_t* avail);
+
 /** @brief Read from device to float buffer.
  *
  *  Steps:

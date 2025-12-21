@@ -1,6 +1,7 @@
 #include "sndx/duplex.h"
 #include "sndx/buffer.h"
 #include "sndx/params.h"
+#include "sndx/types.h"
 #include <sched.h>
 
 static sndx_params_t default_params = {
@@ -494,6 +495,36 @@ int sndx_duplex_set_schduler(output_t* output)
 
     a_info("Scheduler set to %s with priority %i...", //
            spolicy, sched_param.sched_priority);
+
+    return 0;
+}
+
+int sndx_duplex_wait(sndx_duplex_t* d, uframes_t* avail)
+{
+
+    int       err;
+    output_t* output = d->out;
+
+    // Wait -> TODO: error checking
+    snd_pcm_wait(d->capt, 1000);
+
+    // NOTE: No longer copying twice
+    sframes_t capt_avail = snd_pcm_avail_update(d->capt);
+    SndReturn_(capt_avail, "Failed: snd_pcm_avail_update (capt): %s");
+
+    sframes_t play_avail = snd_pcm_avail_update(d->play);
+    SndReturn_(play_avail, "Failed: snd_pcm_avail_update (play): %s");
+
+    err = -(play_avail < (i64)d->period_size);
+    Return_(err, "Failed: play_avail < d->period_size: %ld < %ld", play_avail, d->period_size);
+
+    err = -(capt_avail < (i64)d->period_size);
+    Return_(err, "Failed: capt_avail < d->period_size: %ld < %ld", capt_avail, d->period_size);
+
+    sframes_t nframes = d->period_size;
+
+    *avail = capt_avail < play_avail ? capt_avail : play_avail;
+    *avail = nframes < play_avail ? nframes : play_avail;
 
     return 0;
 }
