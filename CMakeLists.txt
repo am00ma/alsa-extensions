@@ -9,7 +9,9 @@ project(
     DESCRIPTION "Extensions to alsa-lib for duplex streams on multiple devices"
     LANGUAGES C)
 
-option(SNDX_BUILD_TESTS "Build test programs" ON)
+option(SNDX_BUILD_TESTS "Build test programs"          ON)
+option(SNDX_BUILD_ASAN  "Build with Address Sanitizer" OFF)
+option(SNDX_BUILD_TSAN  "Build with Thread Sanitizer"  OFF)
 
 # =========================================================================
 #                      Config
@@ -49,7 +51,15 @@ target_sources(${LIB_NAME} PRIVATE ${LIB_SOURCES})
 target_include_directories(${LIB_NAME} PUBLIC ${LIB_INCLUDES})
 target_compile_options(${LIB_NAME} ${LIB_C_FLAGS})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+if(SNDX_BUILD_ASAN)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer")
+endif()
+
+if(SNDX_BUILD_TSAN)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer")
+endif()
 
 # =========================================================================
 #                     Tests
