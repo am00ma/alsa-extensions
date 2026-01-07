@@ -1,17 +1,27 @@
 /* Read only list */
-#include "sndx/types.h"
 #include <common-types.h>
 #include <pthread.h>
+
+typedef struct list_t list_t;
+typedef struct list_t
+{
+
+    isize key;
+    i32   val;
+
+    list_t* prev;
+    list_t* next;
+
+} list_t;
 
 typedef struct
 {
     isize     idx;
     pthread_t tid;
 
-    i32*  data;
-    isize len;
+    list_t* head;
 
-    isize key;
+    isize query;
     i32   val;
 
 } data_t;
@@ -20,16 +30,16 @@ void* job_reader(void* data)
 {
     data_t* d = data;
 
-    isize found = -1;
-    RANGE(i, d->len)
+    list_t* head = d->head;
+
+    while (head)
     {
-        if (d->val != d->data[i]) continue;
-        found = i;
-        break;
+        if (d->query == head->key) { break; }
+        head = head->next;
     }
 
-    // p_info("%16ld -> %16d @ %6ld", d->tid, d->val, found);
-    Assert((found == d->key));
+    AssertMsg(head, "Query not found: %ld", d->query);
+    Assert((d->val == head->val));
 
     return 0;
 }
@@ -38,27 +48,47 @@ int main()
 {
     int err;
 
-    constexpr isize num_readers = 1'000;
-    constexpr isize num_data    = 10'000'000;
+    constexpr isize num_readers = 10;
+    constexpr isize num_data    = 1'000;
 
-    i32* data = calloc(num_data, sizeof(i32));
+    list_t* data = calloc(num_data, sizeof(list_t));
     Goto((!data), __close_rtobject, "Failed: calloc");
 
     isize a = 1103515245;
     isize c = 12345;
     isize m = 1 << 31;
 
-    data[0] = 123456;
-    RANGE(i, 1, num_data) { data[i] = (a * data[i - 1] + c) % m; }
+    // Connect the list
+
+    data[0] = (list_t){
+        .key  = 0,
+        .val  = 12345,
+        .next = &data[1],
+        .prev = nullptr,
+    };
+
+    RANGE(i, 1, num_data - 1)
+    {
+        data[i].key      = i;
+        data[i].val      = (a * data[i - 1].val + c) % m;
+        data[i].next     = &data[i + 1];
+        data[i + 1].prev = &data[i];
+    }
+
+    data[num_data - 1] = (list_t){
+        .key  = num_data - 1,
+        .val  = (a * data[num_data - 2].val + c) % m,
+        .next = nullptr,
+        .prev = &data[num_data - 2],
+    };
 
     data_t readers[num_readers];
     RANGE(i, num_readers)
     {
-        readers[i].idx  = i;
-        readers[i].data = data;
-        readers[i].len  = num_data;
-        readers[i].key  = num_data - i - 1;
-        readers[i].val  = data[num_data - i - 1];
+        readers[i].idx   = i;
+        readers[i].head  = data;
+        readers[i].query = num_data - i - 1;           // Query from end
+        readers[i].val   = data[num_data - i - 1].val; // Since we know ordered
     }
 
     Timestamp(start);
@@ -80,7 +110,7 @@ int main()
     Timestamp(stop);
 
     f32 elapsed = ToSec(stop) - ToSec(start);
-    p_info("Elapsed: %.4f secs", elapsed);
+    p_info("Elapsed: %.4f millisecs", elapsed * 1e3);
 
     return EXIT_SUCCESS;
 
