@@ -345,7 +345,7 @@ int sndx_duplex_start(sndx_duplex_t* d)
     }
 
     // RUNNING
-    // sndx_dump_duplex_status(d, output);
+    sndx_dump_duplex_status(d, output);
 
     // Start the timer (TODO: provide option to check if in xrun)
     sndx_timer_start(d->timer, d->rate, d->play, d->capt);
@@ -506,11 +506,12 @@ int sndx_duplex_wait(sndx_duplex_t* d, uframes_t* avail)
     output_t* output = d->out;
 
     // Wait -> TODO: error checking
-    snd_pcm_wait(d->capt, 1000);
+    err = snd_pcm_wait(d->capt, 1000);
+    SndReturn_(err, "Failed: snd_pcm_wait (capt) (err=%d): %s ", err);
 
     // NOTE: No longer copying twice
     sframes_t capt_avail = snd_pcm_avail_update(d->capt);
-    SndReturn_(capt_avail, "Failed: snd_pcm_avail_update (capt): %s");
+    SndReturn_(capt_avail, "Failed: snd_pcm_avail_update (capt) (capt_avail=%ld): %s ", capt_avail);
 
     sframes_t play_avail = snd_pcm_avail_update(d->play);
     SndReturn_(play_avail, "Failed: snd_pcm_avail_update (play): %s");
