@@ -6,3 +6,13 @@
 
 compile_commands.json
 outputs
+docs/A_Fast_Fourier_Transform_Compiler.pdf
+docs/A_comparative_performance_study_of_several_pitch_detection_algorithms.pdf
+docs/Efficient_Pitch_Detection_Techniques.pdf
+docs/From_frequency_to_quefrency_a_history_of_the_cepstrum.pdf
+docs/Kuhn-RealTimePitchRecognition-1990.pdf
+docs/Performance_analysis_of_several_pitch_detection_algorithms_on_simulated_and_real_noisy_speech_data.pdf
+docs/Philip_McLeod_PhD.pdf
+docs/Pitch_detection_in_time_and_frequency_domain.pdf
+docs/Pitch_detection_using_the_short-term_phase_spectrum.pdf
+docs/fftw-paper-ieee.pdf
